@@ -18,30 +18,225 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
-
-ks <- read.csv('Kickstarter_Campaigns_DataSet.csv')
-head(ks)
-class(ks)
-summary(ks)
-str(ks)
+ks_b <- read.csv('Kickstarter_Campaigns_DataSet.csv')
+head(ks_b)
+class(ks_b)
+summary(ks_b)
+str(ks_b)
 
 
 
 library(tidyverse)
 library(lubridate)
 
-#fix dates and extract m/d/y
-ks <- ks %>% mutate(launched_at=mdy_hm(launched_at)) %>%
+
+##############################################################################
+##
+## table cleaning
+##
+##############################################################################
+
+#fix dates and extract m/d/y, filter status
+ks <- ks_b %>% 
+  mutate(launched_at=mdy_hm(launched_at)) %>%
   mutate(launch_year=year(launched_at)) %>% 
   mutate(launch_month=month(launched_at)) %>%
   mutate(launch_dom=day(launched_at)) %>%
   mutate(launch_dow=wday(launched_at)) %>%
+  mutate(launch_hour=hour(launched_at)) %>%
   mutate(deadline=mdy_hm(deadline)) %>% 
-  
-  
+  mutate(dead_year=year(deadline)) %>% 
+  mutate(dead_month=month(deadline)) %>% 
+  mutate(dead_dom=day(deadline)) %>% 
+  mutate(dead_dow=wday(deadline)) %>%
+  mutate(dead_hour=hour(deadline)) %>% 
+  filter(status=='successful'|status=='failed') %>%
+  mutate(pct_pledged=usd_pledged/goal_usd)
+
+summary(ks)
+#no null values!
+
+## id
+#unremarkable
+
+## name
+# unremarkable
+
+## currency
+# unremarkable
+
+## launched_at
+# break into discrete elements for analysis
+
+## backers_count
+# huge difference between IQR and max value
+# investigate
+
+## blurb
+# unremarkable
+
+## country
+# unremarkable
+
+## deadline
+# break into discrete elements for analysis
+
+## slug
+# unremarkable
+
+## status
+# unremarkable
+
+## usd_pledged
+# huge disparity between IQR and max
+# compare to amt pledged, backers
+
+## sub_category
+# unremarkable
+
+## main_category
+# unremarkable
+
+## creator_id
+# unremarkable
+# look for repeat projects by same creator
+
+
+## blurb_length
+# what is this? slug lenght?
+
+## goal_usd
+# IQR way low compared to max
+# figure out way to eliminate outliers from this
+
+## city
+# unremarkable
+
+## duration
+# very tightly grouped around 30 days
+# 98 days outlier?
+
+
+```
 
 
 
+
+
+```{r cars}
+##############################################################################
+##
+## Funding Goal & % Pledged
+##
+##############################################################################
+
+
+summary(ks$goal_usd)
+#      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#         0      1400      4716     36880     12000 135403380
+
+ks %>% group_by(status) %>% summarize(mean(goal_usd),max(goal_usd),median(goal_usd))
+#   status     `mean(goal_usd)` `max(goal_usd)` `median(goal_usd)`
+#   <chr>                 <dbl>           <dbl>              <dbl>
+# 1 failed               83216.       135403380               6800
+# 2 successful            8858.         2000000               3500
+
+ks %>%
+  ggplot(aes(x=goal_usd)) +
+  geom_histogram(aes(fill=status,line='black'), bins=10, position='dodge')
+# not useful
+
+
+#--- Density Plots ----
+
+#filter for 200k (max for successful)
+ks %>% filter(goal_usd<2e5) %>%
+  ggplot(aes(x=goal_usd)) +
+  geom_density(aes(fill=status), alpha = .4)
+# better - confirms cheaper projects are usually funded
+
+ks %>% filter(goal_usd<1e5) %>%
+  ggplot(aes(x=goal_usd)) +
+  geom_density(aes(fill=status), alpha = .4)
+
+
+
+#---------------------------------------------------------------
+#
+
+ks %>% filter(goal_usd<1e5,pct_pledged<5) %>%
+  ggplot(aes(x=pct_pledged)) +
+  geom_density(aes(fill=status), alpha = .4)
+#vast majority of funded projects do not exceed 200% of goal
+
+
+##############################################################################
+##
+## Backer Stats
+##
+##############################################################################
+
+
+
+##############################################################################
+##
+## Categories
+##
+##############################################################################
+
+
+
+##############################################################################
+##
+## Launch Timing
+##
+##############################################################################
+
+
+
+##############################################################################
+##
+## Deadline
+##
+##############################################################################
+
+
+##############################################################################
+##
+## Duration
+##
+##############################################################################
+
+
+##############################################################################
+##
+## Location
+##
+##############################################################################
+
+
+##############################################################################
+##
+## Creator Experience
+##
+##############################################################################
+
+
+
+##############################################################################
+##
+## Project Name and Blurb Characteristics
+##
+##############################################################################
+
+#boxplots
+
+
+##############################################################################
+##
+## Funding Goal
+##
+##############################################################################
 
 
 
