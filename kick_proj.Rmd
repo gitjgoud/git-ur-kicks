@@ -51,7 +51,8 @@ ks <- ks_b %>%
   mutate(dead_dow=wday(deadline)) %>%
   mutate(dead_hour=hour(deadline)) %>% 
   filter(status=='successful'|status=='failed') %>%
-  mutate(pct_funded=usd_pledged/goal_usd)
+  mutate(pct_funded=usd_pledged/goal_usd) %>%
+  mutate(avg_plg.brk=ifelse(backers_count > 0,usd_pledged/backers_count,0))
 
 # ----- review column summary ---------------------------------------------
 summary(ks)
@@ -69,7 +70,15 @@ summary(ks)
 ## launched_at
 # break into discrete elements for analysis
 
-## backers_count
+## backers_count ------------------------------------
+# some projects have no backers - eliminate?
+# ks %>% count(backers_count==0)  
+#   backers_count == 0      n
+# 1              FALSE 189684
+# 2               TRUE  13163
+13163/(13163+189684) #~6.5% of projects have no
+
+
 # huge difference between IQR and max value
 # investigate
 
@@ -208,6 +217,15 @@ ks %>% filter(goal_usd<1e5,pct_funded<5) %>%
   geom_density(aes(fill=status), alpha = .4)
 #vast majority of funded projects do not exceed 200% of goal
 
+#--- Histogram/pct_funded
+
+ks %>% filter(status=='successful') %>%
+  ggplot(aes(x=log(pct_funded))) + 
+  geom_histogram(aes(),col='white') 
+
+ks %>% filter(status=='successful') %>%
+  ggplot(aes(x=log(pct_funded))) + 
+  geom_density() 
 
 #--- Scatter Plot/pct_funded*goal_usd ---
 
@@ -217,8 +235,9 @@ ks %>%
 
 ks %>%
   ggplot(aes(x=log(goal_usd),y=log(pct_funded))) + 
-  geom_point(aes(color=status))
+  geom_point(aes(color=status),size=.01)
 #would this be reason to omit projects with no funding from the analysis?
+
 
 ks %>% group_by(status) %>% summarize(sum(pct_funded<.1),sum(pct_funded<.01),sum(pct_funded<.001),sum(pct_funded<.0001))
 #   status     `sum(pct_funded < 0.1)` `sum(pct_funded < 0.01)` `sum(pct_funded < 0.001)` `sum(pct_funded < 1e-04)`
@@ -227,11 +246,9 @@ ks %>% group_by(status) %>% summarize(sum(pct_funded<.1),sum(pct_funded<.01),sum
 # 2 successful                       0                        0                         0                         0
 
 ks %>%
-  ggplot(aes(x=log(goal_usd),y=log(pct_funded))) + 
-  geom_density_2d()
-
-
-
+  split(.$status) %>%
+  map(summary)
+  
 
 ##############################################################################
 ##
@@ -239,6 +256,8 @@ ks %>%
 ##
 ##############################################################################
 
+
+ks %>% group_by(status) %>% summarise(mean(avg_plg.brk))
 
 
 ##############################################################################
