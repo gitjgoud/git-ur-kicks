@@ -618,7 +618,43 @@ country %>%
 ##############################################################################
 
 
+#creators with more than one project
 
+creator <- ks %>% 
+  group_by(creator_id) %>% 
+  summarise(total_proj=n(),
+            succ_rate=sum(status=='successful')/total) %>%
+  filter(total_proj>1)
+
+creator %>%
+  ggplot() +
+  geom_point(aes(x=total,y=succ_rate))
+
+#------------
+creator2 <- ks %>% 
+  group_by(creator_id,status) %>% 
+  summarise(total_proj=n()) %>%
+  filter(total_proj>1)
+
+creator2
+  
+creator2 %>%
+  ggplot() +
+  geom_density(aes(x=total_proj,fill=status),alpha=.4) +
+  xlim(0,20)
+
+#--------------------
+creator3 <- ks %>% 
+  group_by(creator_id,status) %>% 
+  summarise(total_proj=n())
+
+creator3
+  
+creator3 %>%
+  ggplot() +
+  geom_density(aes(x=total_proj,fill=status),alpha=.4) +
+  xlim(0,10)
+# this is kinda interesting
 
 ##############################################################################
 ##
@@ -627,9 +663,6 @@ country %>%
 ##############################################################################
 
 #boxplots
-
-
-
 
 
 ```
