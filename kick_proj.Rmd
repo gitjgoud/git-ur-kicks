@@ -17,7 +17,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
+```{r}
 ks_b <- read.csv('Kickstarter_Campaigns_DataSet.csv')
 head(ks_b)
 class(ks_b)
@@ -90,41 +90,41 @@ ks %>% group_by(status) %>% count(backers_count==0)
 # 1 failed     FALSE                 63281
 # 2 failed     TRUE                  13163
 # 3 successful FALSE                126403
-13163/(13163+63281) #17% of failed projects have no backers!!! ###############################################report on this
+13163/(13163+63281) #17% of failed projects have no backers!!! ###############################################report this
 # huge difference between IQR and max value
 # investigate
 
 ## blurb ----------------------------------------------------------------------
 # unremarkable
 
-## country
+## country ----------------------------------------------------------------------
 # unremarkable
 
-## deadline
+## deadline ----------------------------------------------------------------------
 # break into discrete elements for analysis
 
-## slug
+## slug ----------------------------------------------------------------------
 # unremarkable
 
-## status
+## status ----------------------------------------------------------------------
 # unremarkable
 
-## usd_pledged
+## usd_pledged ----------------------------------------------------------------------
 # huge disparity between IQR and max
 # compare to amt pledged, backers
 
-## sub_category
+## sub_category ----------------------------------------------------------------------
 # unremarkable
 
-## main_category
+## main_category ----------------------------------------------------------------------
 # unremarkable
 
-## creator_id
+## creator_id ----------------------------------------------------------------------
 # unremarkable
 # look for repeat projects by same creator
 
 
-## blurb_length
+## blurb_length ----------------------------------------------------------------------
 # what is this? slug lenght?
 
 ## goal_usd ---------------------------------------------------------------------
@@ -142,8 +142,9 @@ ks %>% count(goal_usd < 1)
 
 ## city ---------------------------------------------------------------------------------------------------------------
 # unremarkable
+#potentially overlay heat map of projects
 
-## duration
+## duration ----------------------------------------------------------------------
 # very tightly grouped around 30 days
 # 98 days outlier?
 
@@ -157,6 +158,20 @@ ks %>% count(goal_usd < 1)
 
 
 ```{r cars}
+##############################################################################
+##
+## Status
+##
+##############################################################################
+
+ks %>% 
+  group_by(status) %>% 
+  summarise(total=n()) %>%
+  ggplot(aes(x="",y=total,fill=status)) + 
+  geom_bar(stat='identity',width=1,color='white') + 
+  coord_polar('y',start=0) +
+  theme_void()
+
 ##############################################################################
 ##
 ## Funding Goal & % Pledged
@@ -179,6 +194,10 @@ ks %>%
   geom_histogram(aes(fill=status,line='black'), bins=10, position='dodge')
 # not useful
 
+
+#---------------------------------------------------------------------
+#      goal_usd
+#----------------------------------------------------------------------
 
 #--- Density Plots/goal_usd ----
 
@@ -223,6 +242,11 @@ ks %>% filter(goal_usd<=2e5) %>%
 #seconday analysis - consider what makes more expensive projects successful
 #(look at things like google search trends)
 
+#---------------------------------------------------------------------
+#      pct_funded
+#----------------------------------------------------------------------
+
+  
 #--- Density Plot/pct_funded
 
 ks %>% filter(goal_usd<1e5,pct_funded<5) %>%
@@ -236,9 +260,10 @@ ks %>% filter(status=='successful') %>%
   ggplot(aes(x=log(pct_funded))) + 
   geom_histogram(aes(),col='white') 
 
-ks %>% filter(status=='successful') %>%
-  ggplot(aes(x=log(pct_funded))) + 
-  geom_density() 
+#---------------------------------------------------------------------
+#      goal_usd x pct_funded
+#----------------------------------------------------------------------
+
 
 #--- Scatter Plot/pct_funded*goal_usd ---
 
@@ -250,6 +275,7 @@ ks %>%
   ggplot(aes(x=log(goal_usd),y=log(pct_funded))) + 
   geom_point(aes(color=status),size=.01)
 #would this be reason to omit projects with no funding from the analysis?
+#what is a better way to interpret this?
 
 
 ks %>% group_by(status) %>% summarize(sum(pct_funded<.1),sum(pct_funded<.01),sum(pct_funded<.001),sum(pct_funded<.0001))
@@ -273,7 +299,7 @@ ks %>%
 #interesting that pledge per backer is HIGHER for projects near 100% funding
 
 ks %>%
-  ggplot(aes(x=log(pct_funded),y=(backers_count))) + 
+  ggplot(aes(x=log(goal_usd),y=(avg_plg.bkr))) + 
   geom_point(aes(color=status),size=.01)
 
 
@@ -324,7 +350,30 @@ ks %>% group_by(status) %>% count(backers_count==0)
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in launch timing
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in goals/funded - DONE
 
+ks %>%
+  ggplot() +
+  geom_density(aes(x=backers_count,fill=status),alpha=.4) +
+  xlim(0,500)
 
+ks %>%
+  ggplot() +
+  geom_density(aes(x=backers_count,fill=status),alpha=.4) +
+  xlim(0,200)
+
+ks %>%
+  ggplot() +
+  geom_density(aes(x=log(backers_count),fill=status),alpha=.4)
+#sub in actual values on axis
+
+
+ks %>%
+  ggplot() +
+  geom_density(aes(x=usd_pledged/backers_count,fill=status),alpha=.4) +
+  xlim(0,500)
+```
+
+
+```{r cars}
 ##############################################################################
 ##
 ## Categories
@@ -378,9 +427,11 @@ sub_cat %>%
   geom_point(aes(y=pct_succ)) +
   geom_point(aes(y=avg_plg/100),col='green4',shape=1)
 
+#redo - plot % success vs goal, color dots by category, scale size by number of projects ---------------------------------------------------!!!!!!!
+
 sub_cat %>%
   ggplot(aes(x=reorder(sub_category, pct_succ))) +
-  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Average Pledge")) +
+  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Average Backer Count")) +
   geom_point(aes(y=pct_succ)) +
   geom_point(aes(y=avg_bkrs/100),col='green4',shape=1)
 
@@ -403,7 +454,6 @@ ks %>%
 
 
 ?sec_axis
-
 
 ##############################################################################
 ##
@@ -655,6 +705,8 @@ creator3 %>%
   geom_density(aes(x=total_proj,fill=status),alpha=.4) +
   xlim(0,10)
 # this is kinda interesting
+#should be 0 to 1
+# plot 1 proj vs more than one
 
 ##############################################################################
 ##
@@ -664,15 +716,14 @@ creator3 %>%
 
 #boxplots
 
-
+#stringr count strings
 ```
 
-## Including Plots
+## Build a model
 
-You can also embed plots, for example:
+```{r log_model}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+
+
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
