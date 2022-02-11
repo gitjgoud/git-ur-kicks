@@ -52,7 +52,7 @@ ks <- ks_b %>%
   mutate(dead_hour=hour(deadline)) %>% 
   filter(status=='successful'|status=='failed') %>%
   mutate(pct_funded=usd_pledged/goal_usd) %>%
-  mutate(avg_plg.brk=ifelse(backers_count > 0,usd_pledged/backers_count,0))
+  mutate(avg_plg.bkr=ifelse(backers_count > 0,usd_pledged/backers_count,0))
 
 # ----- review column summary ---------------------------------------------
 summary(ks)
@@ -72,11 +72,19 @@ summary(ks)
 
 ## backers_count ------------------------------------
 # some projects have no backers - eliminate?
-# ks %>% count(backers_count==0)  
+ks %>% count(backers_count==0)  
 #   backers_count == 0      n
 # 1              FALSE 189684
 # 2               TRUE  13163
-13163/(13163+189684) #~6.5% of projects have no
+13163/(13163+189684) #~6.5% of projects have no backers
+
+ks %>% group_by(status) %>% count(backers_count==0)  
+#   status     `backers_count == 0`      n
+#   <chr>      <lgl>                 <int>
+# 1 failed     FALSE                 63281
+# 2 failed     TRUE                  13163
+# 3 successful FALSE                126403
+13163/(13163+63281) #17% of failed projects have no backers!!!
 
 
 # huge difference between IQR and max value
@@ -248,7 +256,26 @@ ks %>% group_by(status) %>% summarize(sum(pct_funded<.1),sum(pct_funded<.01),sum
 ks %>%
   split(.$status) %>%
   map(summary)
-  
+
+
+#--- Scatter/pct_funded and backers
+
+ks %>%
+  ggplot(aes(x=log(pct_funded),y=(avg_plg.bkr))) + 
+  geom_point(aes(color=status),size=.01)
+#pattern break at funding line probably has to do with shift in backer behavior
+#tendency to make low pledge to follow a project, recieve updates and adjust in last 24 of campaign
+#interesting that pledge per backer is HIGHER for projects near 100% funding
+
+ks %>%
+  ggplot(aes(x=log(pct_funded),y=(backers_count))) + 
+  geom_point(aes(color=status),size=.01)
+
+
+ks %>%
+  ggplot(aes(x=log(pct_funded),y=(backers_count))) + 
+  geom_point(aes(color=status),size=.01)
+
 
 ##############################################################################
 ##
@@ -256,8 +283,41 @@ ks %>%
 ##
 ##############################################################################
 
+#--- Pledge per backer stats
 
 ks %>% group_by(status) %>% summarise(mean(avg_plg.brk))
+#   status     `mean(avg_plg.brk)`
+#   <chr>                    <dbl>
+# 1 failed                    47.1
+# 2 successful                92.1
+ks %>% filter(backers_count>0) %>% group_by(status) %>% summarise(mean(avg_plg.brk))
+#   status     `mean(avg_plg.brk)`
+#   <chr>                    <dbl>
+# 1 failed                    56.9
+# 2 successful                92.1
+
+#excluding backers brings average pledge per backer up by ~25%
+
+
+# --- Investigating campaigns with no backers
+
+ks %>% count(backers_count==0)  
+#   backers_count == 0      n
+# 1              FALSE 189684
+# 2               TRUE  13163
+13163/(13163+189684) #~6.5% of projects have no backers
+
+ks %>% group_by(status) %>% count(backers_count==0)  
+#   status     `backers_count == 0`      n
+#   <chr>      <lgl>                 <int>
+# 1 failed     FALSE                 63281
+# 2 failed     TRUE                  13163
+# 3 successful FALSE                126403
+13163/(13163+63281) #17% of failed projects have no backers!!!
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in categories
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in launch timing
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in goals/funded - DONE
 
 
 ##############################################################################
@@ -266,6 +326,62 @@ ks %>% group_by(status) %>% summarise(mean(avg_plg.brk))
 ##
 ##############################################################################
 
+# x = categories, y = goal, success rate
+
+sub_cat <- ks %>% 
+  group_by(sub_category) %>%
+  summarise(pct_succ=sum(pct_funded>=1)/n(),
+            avg_goal=mean(goal_usd),
+            avg_bkrs=mean(backers_count),
+            avg_plg=mean(avg_plg.bkr))
+sub_cat
+
+#category vs success/goal
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ))) +
+  geom_point(aes(y=pct_succ)) +
+  geom_point(aes(y=avg_goal/1e5),shape=1) 
+
+#category vs backer count
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ)))+
+  geom_point(aes(y=avg_bkrs/10))
+#captured by scale 0-600
+#adjust to show in 10s, scale to match avg_goal
+
+#category vs backer count
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ)))+
+  geom_point(aes(y=avg_plg))
+#captured by scale 0-140
+
+#category vs goal
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ)))+
+  geom_point(aes(y=avg_goal/1000))
+#high of 100k - change to plot in thousands, captured by scale 0-100
+
+
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ))) +
+  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Counts")) +
+  geom_point(aes(y=pct_succ)) +
+  geom_point(aes(y=avg_goal/100000,fill='green'),shape=1) +
+  geom_point(aes(y=avg_bkrs/100),shape=3) +
+  geom_point(aes(y=avg_plg/100),shape=4)
+
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ)))+
+  geom_point(aes(y=avg_bkrs))
+
+
+
+ks %>% 
+  group_by(main_category) %>%
+  summarise(pct_succ=sum(pct_funded>=1)/n())
+
+
+?sec_axis
 
 
 ##############################################################################
