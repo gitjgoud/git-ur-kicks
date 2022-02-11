@@ -32,7 +32,7 @@ library(lubridate)
 
 ##############################################################################
 ##
-## table cleaning
+## cleaning and review
 ##
 ##############################################################################
 
@@ -51,10 +51,11 @@ ks <- ks_b %>%
   mutate(dead_dow=wday(deadline)) %>%
   mutate(dead_hour=hour(deadline)) %>% 
   filter(status=='successful'|status=='failed') %>%
-  mutate(pct_pledged=usd_pledged/goal_usd)
+  mutate(pct_funded=usd_pledged/goal_usd)
 
+# ----- review column summary ---------------------------------------------
 summary(ks)
-#no null values!
+#no null values
 
 ## id
 #unremarkable
@@ -105,9 +106,17 @@ summary(ks)
 ## blurb_length
 # what is this? slug lenght?
 
-## goal_usd
+## goal_usd -------------------
 # IQR way low compared to max
-# figure out way to eliminate outliers from this
+summary(ks$goal_usd)
+
+ks %>% group_by(status) %>% summarize(max(goal_usd),total_projs=n(),'goal_2m' = sum(goal_usd>=2e6),'pct_2m'=goal_2m/total_projs)
+#   status     `max(goal_usd)` total_projs goal_2m    pct_2m
+#   <chr>                <dbl>       <int>   <int>     <dbl>
+# 1 failed           135403380       76444     295 0.00386  
+# 2 successful         2000000      126403       4 0.0000316
+#---
+
 
 ## city
 # unremarkable
@@ -115,6 +124,8 @@ summary(ks)
 ## duration
 # very tightly grouped around 30 days
 # 98 days outlier?
+
+
 
 
 ```
@@ -147,27 +158,79 @@ ks %>%
 # not useful
 
 
-#--- Density Plots ----
+#--- Density Plots/goal_usd ----
 
 #filter for 200k (max for successful)
 ks %>% filter(goal_usd<2e5) %>%
   ggplot(aes(x=goal_usd)) +
   geom_density(aes(fill=status), alpha = .4)
-# better - confirms cheaper projects are usually funded
+# better - confirms cheaper projects much more likely to be succesful
 
 ks %>% filter(goal_usd<1e5) %>%
   ggplot(aes(x=goal_usd)) +
   geom_density(aes(fill=status), alpha = .4)
 
+#filter for values close to mean of successful projects
+ks %>% filter(goal_usd<1e4) %>%
+  ggplot(aes(x=goal_usd)) +
+  geom_density(aes(fill=status), alpha = .4)
 
 
-#---------------------------------------------------------------
-#
+#--- Box Plots/goal_usd
 
-ks %>% filter(goal_usd<1e5,pct_pledged<5) %>%
-  ggplot(aes(x=pct_pledged)) +
+ks %>%
+  ggplot(aes(x=fct_reorder(status,goal_usd),y=goal_usd)) +
+  geom_violin(aes(fill=status)) +
+  geom_boxplot(alpha=.5)
+#long tail of unsuccessful projects masks
+
+
+ks %>%
+  ggplot(aes(x=fct_reorder(status,goal_usd),y=log(goal_usd))) +
+  geom_violin(aes(fill=status)) +
+  geom_boxplot(alpha=.5)
+# Overlap between IQRs, medians are veyr close (on log scale)
+# success has low tail, failed has high
+
+ks %>% filter(goal_usd<=2e5) %>%
+  ggplot(aes(x=fct_reorder(status,goal_usd),y=goal_usd)) +
+  geom_violin(aes(fill=status)) #+
+  geom_boxplot(alpha=.5)
+#ugly (hide box?) but demonstrates point- cheap projects are easier to make successful
+#primary analaysis - acknowledge that cheap projects will succeed
+#seconday analysis - consider what makes more expensive projects successful
+#(look at things like google search trends)
+
+#--- Density Plot/pct_funded
+
+ks %>% filter(goal_usd<1e5,pct_funded<5) %>%
+  ggplot(aes(x=pct_funded)) +
   geom_density(aes(fill=status), alpha = .4)
 #vast majority of funded projects do not exceed 200% of goal
+
+
+#--- Scatter Plot/pct_funded*goal_usd ---
+
+ks %>%
+  ggplot(aes(x=goal_usd,y=pct_funded)) + 
+  geom_point(aes(color=status))
+
+ks %>%
+  ggplot(aes(x=log(goal_usd),y=log(pct_funded))) + 
+  geom_point(aes(color=status))
+#would this be reason to omit projects with no funding from the analysis?
+
+ks %>% group_by(status) %>% summarize(sum(pct_funded<.1),sum(pct_funded<.01),sum(pct_funded<.001),sum(pct_funded<.0001))
+#   status     `sum(pct_funded < 0.1)` `sum(pct_funded < 0.01)` `sum(pct_funded < 0.001)` `sum(pct_funded < 1e-04)`
+#   <chr>                        <int>                    <int>                     <int>                     <int>
+# 1 failed                       58359                    38026                     24742                     16997
+# 2 successful                       0                        0                         0                         0
+
+ks %>%
+  ggplot(aes(x=log(goal_usd),y=log(pct_funded))) + 
+  geom_density_2d()
+
+
 
 
 ##############################################################################
