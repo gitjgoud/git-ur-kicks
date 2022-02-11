@@ -24,8 +24,6 @@ class(ks_b)
 summary(ks_b)
 str(ks_b)
 
-
-
 library(tidyverse)
 library(lubridate)
 
@@ -38,7 +36,9 @@ library(lubridate)
 
 #fix dates and extract m/d/y, filter status
 ks <- ks_b %>% 
+  #format date strings into date class
   mutate(launched_at=mdy_hm(launched_at)) %>%
+  #extract elements from launch date and deadline
   mutate(launch_year=year(launched_at)) %>% 
   mutate(launch_month=month(launched_at)) %>%
   mutate(launch_dom=day(launched_at)) %>%
@@ -50,9 +50,15 @@ ks <- ks_b %>%
   mutate(dead_dom=day(deadline)) %>% 
   mutate(dead_dow=wday(deadline)) %>%
   mutate(dead_hour=hour(deadline)) %>% 
+  #filter for projects that are completed and not canceled
   filter(status=='successful'|status=='failed') %>%
+  #calculate percent funded
   mutate(pct_funded=usd_pledged/goal_usd) %>%
-  mutate(avg_plg.bkr=ifelse(backers_count > 0,usd_pledged/backers_count,0))
+  #calculates average pledge amount
+  mutate(avg_plg.bkr=ifelse(backers_count > 0,usd_pledged/backers_count,0)) %>%
+  #remove projects with goal under 1$
+  filter(goal_usd>1)
+
 
 # ----- review column summary ---------------------------------------------
 summary(ks)
@@ -70,7 +76,7 @@ summary(ks)
 ## launched_at
 # break into discrete elements for analysis
 
-## backers_count ------------------------------------
+## backers_count -------------------------------------------------------------
 # some projects have no backers - eliminate?
 ks %>% count(backers_count==0)  
 #   backers_count == 0      n
@@ -84,13 +90,11 @@ ks %>% group_by(status) %>% count(backers_count==0)
 # 1 failed     FALSE                 63281
 # 2 failed     TRUE                  13163
 # 3 successful FALSE                126403
-13163/(13163+63281) #17% of failed projects have no backers!!!
-
-
+13163/(13163+63281) #17% of failed projects have no backers!!! ###############################################report on this
 # huge difference between IQR and max value
 # investigate
 
-## blurb
+## blurb ----------------------------------------------------------------------
 # unremarkable
 
 ## country
@@ -123,7 +127,7 @@ ks %>% group_by(status) %>% count(backers_count==0)
 ## blurb_length
 # what is this? slug lenght?
 
-## goal_usd -------------------
+## goal_usd ---------------------------------------------------------------------
 # IQR way low compared to max
 summary(ks$goal_usd)
 
@@ -132,10 +136,11 @@ ks %>% group_by(status) %>% summarize(max(goal_usd),total_projs=n(),'goal_2m' = 
 #   <chr>                <dbl>       <int>   <int>     <dbl>
 # 1 failed           135403380       76444     295 0.00386  
 # 2 successful         2000000      126403       4 0.0000316
-#---
 
+ks %>% count(goal_usd < 1)
+#goals for under $1 will be removed and considered unreal
 
-## city
+## city ---------------------------------------------------------------------------------------------------------------
 # unremarkable
 
 ## duration
@@ -361,19 +366,35 @@ sub_cat %>%
   geom_point(aes(y=avg_goal/1000))
 #high of 100k - change to plot in thousands, captured by scale 0-100
 
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ))) +
+  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Goal in Thousands USD")) +
+  geom_point(aes(y=pct_succ)) +
+  geom_point(aes(y=avg_goal/100000),col='green4',shape=1)
+
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ))) +
+  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Average Pledge")) +
+  geom_point(aes(y=pct_succ)) +
+  geom_point(aes(y=avg_plg/100),col='green4',shape=1)
+
+sub_cat %>%
+  ggplot(aes(x=reorder(sub_category, pct_succ))) +
+  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Average Pledge")) +
+  geom_point(aes(y=pct_succ)) +
+  geom_point(aes(y=avg_bkrs/100),col='green4',shape=1)
+
 
 sub_cat %>%
   ggplot(aes(x=reorder(sub_category, pct_succ))) +
   scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Counts")) +
   geom_point(aes(y=pct_succ)) +
-  geom_point(aes(y=avg_goal/100000,fill='green'),shape=1) +
-  geom_point(aes(y=avg_bkrs/100),shape=3) +
-  geom_point(aes(y=avg_plg/100),shape=4)
+  geom_point(aes(y=avg_goal/100000),col='green4',shape=1) +  #circles
+  geom_point(aes(y=avg_bkrs/100),col='green4',shape=2) +     #triangles
+  geom_point(aes(y=avg_plg/100),col='green4',shape=3)        #plus
+#this plot loses tech stuff
 
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ)))+
-  geom_point(aes(y=avg_bkrs))
-
+#--- by main category
 
 
 ks %>% 
@@ -390,13 +411,135 @@ ks %>%
 ##
 ##############################################################################
 
+ks %>%
+  group_by(launch_year) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=launch_year,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(2009,2020),breaks=seq(2009,2020)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+#interesting drop in 2014 then trending back up
+#roll in new data if time permits
 
+p_lm <- ks %>%
+  group_by(launch_month) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=launch_month,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(1,12),breaks=seq(1,12)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+p_ldom <- ks %>%
+  group_by(launch_dom) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=launch_dom,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(1,31),breaks=seq(1,31)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+p_ldow <- ks %>%
+  group_by(launch_dow) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=launch_dow,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(1,7),breaks=seq(1,7)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+p_lhour <- ks %>%
+  group_by(launch_hour) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=launch_hour,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(0,23),breaks=seq(0,23),
+                     sec.axis = sec_axis(~.-5, name="EST")) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+library(gridExtra)
+grid.arrange(p_lm,p_ldom,p_ldow,p_lhour, nrow=2)
+
+######################################################################################look at statistical significance of these points
+######################################################################################what timezone is this in? UTC, consider converting (in app automatically convert)
+######################################################################################### second axis with local time
 
 ##############################################################################
 ##
 ## Deadline
 ##
 ##############################################################################
+
+ks %>%
+  group_by(dead_year) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=dead_year,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(2009,2020),breaks=seq(2009,2020)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+#interesting drop in 2014 then trending back up
+#roll in new data if time permits
+
+p_dm <- ks %>%
+  group_by(dead_month) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=dead_month,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(1,12),breaks=seq(1,12)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+p_ddom <- ks %>%
+  group_by(dead_dom) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=dead_dom,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(1,31),breaks=seq(1,31)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+p_ddow <- ks %>%
+  group_by(dead_dow) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=dead_dow,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(1,7),breaks=seq(1,7)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+p_dhour <- ks %>%
+  group_by(dead_hour) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n()) %>%
+  ggplot(aes(x=dead_hour,y=pct_succ)) +
+  geom_point() +
+  scale_x_continuous(limits=c(0,23),breaks=seq(0,23)) +
+  ylim(c(0,1)) +
+  theme(panel.grid.minor=element_blank())
+
+grid.arrange(p_dm,p_ddom,p_ddow,p_dhour, nrow=2)
 
 
 ##############################################################################
@@ -406,11 +549,33 @@ ks %>%
 ##############################################################################
 
 
+ks %>% group_by(status) %>% summarize(mean(duration),min(duration),max(duration),median(duration))
+#   status     `mean(duration)` `min(duration)` `max(duration)` `median(duration)`
+#   <chr>                 <dbl>           <int>           <int>              <dbl>
+# 1 failed                 35.5               1              92                 30
+# 2 successful             31.1               1              98                 30
+
+ks %>%
+  ggplot() +
+  geom_density(aes(x=duration,fill=status),alpha=.4)
+
+ks %>%
+  ggplot()+
+  geom_point(aes(x=duration,y=log(goal_usd),col=status),size=.01)
+
+ks %>%
+  ggplot() +
+  geom_boxplot(aes(y=duration,x=status))
+
+
 ##############################################################################
 ##
 ## Location
 ##
 ##############################################################################
+
+
+
 
 
 ##############################################################################
