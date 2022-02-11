@@ -575,7 +575,40 @@ ks %>%
 ##############################################################################
 
 
+country <- ks %>% group_by(country) %>% summarize(total=n(),
+                                       succ_rate=sum(status=='successful')/total,
+                                       avg_goal=mean(goal_usd),
+                                       avg_pct_fund=mean(pct_funded),
+                                       avg_bkrs=mean(backers_count))
 
+country
+
+#success rate (and relative number of projects)
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=succ_rate)) + 
+  geom_point(aes(y=total/sum(total)*5),shape=1) +
+  ylim(0,1)
+#usa percentage of projects is not listed
+
+#avg_goal
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=succ_rate)) + 
+  geom_point(aes(y=avg_goal/1e6),shape=1)
+# china is an ourlier but still manage similar success rate
+
+#avg_pct_fund
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=avg_pct_fund))
+#usa percentage of projects is not listed
+
+#avg_bkrs
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=succ_rate)) + 
+  geom_point(aes(y=avg_bkrs/1e4),shape=1)
 
 
 ##############################################################################
@@ -583,6 +616,7 @@ ks %>%
 ## Creator Experience
 ##
 ##############################################################################
+
 
 
 
@@ -595,11 +629,6 @@ ks %>%
 #boxplots
 
 
-##############################################################################
-##
-## Funding Goal
-##
-##############################################################################
 
 
 
