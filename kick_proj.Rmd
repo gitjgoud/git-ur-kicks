@@ -351,12 +351,25 @@ ks %>%
 # 1 Foriegn  63662     0.608   37545.     152.    73.0
 # 2 US      138905     0.630   36650.     175.    76.2
 
+ks %>% 
+  mutate(foriegn=ifelse(country=='US','US','Foriegn')) %>% 
+  group_by(status,foriegn) %>%
+  summarize(total=n(),
+            avg_goal=mean(goal_usd),
+            avg_bkrs=mean(backers_count),
+            avg_plg=mean(avg_plg.bkr))
+#   status     foriegn total avg_goal avg_bkrs avg_plg
+#   <chr>      <chr>   <int>    <dbl>    <dbl>   <dbl>
+# 1 failed     Foriegn 24969   84054.     11.4    49.1
+# 2 failed     US      51463   82829.     11.9    46.1
+# 3 successful Foriegn 38693    7533.    243.     88.5
+# 4 successful US      87442    9471.    271.     93.9
+
+
 ```
 
 
-```{r id}
-## launched_at -------------------------------------------------------------
-# break into discrete elements for analysis - DONE
+```{r Backer Stats & Pledge Amounts}
 
 ## backers_count -------------------------------------------------------------
 # some projects have no backers - eliminate? [decided not to but will report in backer stats]
@@ -376,36 +389,73 @@ ks %>% group_by(status) %>% count(backers_count==0)
 # huge difference between IQR and max value
 # investigate
 
-## blurb ----------------------------------------------------------------------
-# unremarkable
+
+#--- Pledge per backer stats ----
+
+ks %>% group_by(status) %>% summarise(mean(avg_plg.bkr))
+#   status     `mean(avg_plg.bkr)`
+#   <chr>                    <dbl>
+# 1 failed                    47.1
+# 2 successful                92.2
+ks %>% filter(backers_count>0) %>% group_by(status) %>% summarise(mean(avg_plg.bkr))
+#   status     `mean(avg_plg.bkr)`
+#   <chr>                    <dbl>
+# 1 failed                    56.9
+# 2 successful                92.2
+##
+#excluding backers brings average pledge per backer up by ~25%
+
+#--- visualizing number of backers vs status
+
+bkr1<- ks %>%
+  ggplot(aes(x=status,y=log(backers_count)))+
+  geom_boxplot(aes(fill=status),alpha=.6)+
+  theme_linedraw() + 
+  labs(title = 'Backer Count', x="", y= "log(Backer Count)") +
+  theme(legend.position = "none")
 
 
-## deadline ----------------------------------------------------------------------
-# break into discrete elements for analysis - DONE
+  
+bkr2 <-ks %>% filter(avg_plg.bkr<250) %>%
+  ggplot(aes(x=status,y=avg_plg.bkr))+
+  geom_boxplot(aes(fill=status),alpha=.6)+
+  theme_linedraw() + 
+  labs(title = 'Average Pledge (USD)', x="", y= "Avg Pledge") +
+  theme(legend.position = "none")
 
-## slug ----------------------------------------------------------------------
-# unremarkable
+grid.arrange(bkr1,bkr2,ncol=2)
 
-## status ----------------------------------------------------------------------
-# unremarkable
+#--- Scatter/pct_funded and backers
 
-## usd_pledged ----------------------------------------------------------------------
-# huge disparity between IQR and max
-# think about how relevant this value is when thinking about project success
-# the quantity itself doesnt seem relevant but instead how it relates to the goal
-# and means of acieving the goal - what's the pct funded and pledge per backer!
 
-## sub_category ----------------------------------------------------------------------
-# unremarkable
+#pattern break at funding line probably has to do with shift in backer behavior
+#tendency to make low pledge to follow a project, recieve updates and adjust in last 24 of campaign
+#interesting that pledge per backer is HIGHER for projects near 100% funding
 
-## main_category ----------------------------------------------------------------------
-# unremarkable
 
-## creator_id ----------------------------------------------------------------------
-# unremarkable
+bkr3 <- ks %>%
+  ggplot(aes(x=log(pct_funded),y=backers_count)) + 
+  geom_point(aes(color=status),size=.01) +
+  ylim(0,25000) +
+  xlim(-10,10) +
+  theme_linedraw() +
+  labs(title='Backer Count Near Funding Goal',x='log(Percent Funded)',y='Backer Count')
 
-## blurb_length ----------------------------------------------------------------------
-#unremarkable
+bkr4 <-ks %>%
+  ggplot(aes(x=log(pct_funded),y=(avg_plg.bkr))) + 
+  geom_point(aes(color=status),size=.01) +
+  ylim(0,5000) +
+  xlim(-10,10) +
+  theme_linedraw() +
+  labs(title='Average Pledge Near Funding Goal',x='log(Percent Funded)',y='Average Pledge')
+
+grid.arrange(bkr3,bkr4,nrow=2)
+
+
+```
+
+
+```{r TBD}
 
 ## goal_usd ---------------------------------------------------------------------
 # IQR way low compared to max - outlines?
@@ -574,83 +624,11 @@ ks %>%
   map(summary)
 
 
-#--- Scatter/pct_funded and backers
-
-ks %>%
-  ggplot(aes(x=log(pct_funded),y=(avg_plg.bkr))) + 
-  geom_point(aes(color=status),size=.01)
-#pattern break at funding line probably has to do with shift in backer behavior
-#tendency to make low pledge to follow a project, recieve updates and adjust in last 24 of campaign
-#interesting that pledge per backer is HIGHER for projects near 100% funding
-
-ks %>%
-  ggplot(aes(x=log(goal_usd),y=(avg_plg.bkr))) + 
-  geom_point(aes(color=status),size=.01)
 
 
-ks %>%
-  ggplot(aes(x=log(pct_funded),y=(backers_count))) + 
-  geom_point(aes(color=status),size=.01)
 
 
-##############################################################################
-##
-## Backer Stats
-##
-##############################################################################
 
-#--- Pledge per backer stats
-
-ks %>% group_by(status) %>% summarise(mean(avg_plg.brk))
-#   status     `mean(avg_plg.brk)`
-#   <chr>                    <dbl>
-# 1 failed                    47.1
-# 2 successful                92.1
-ks %>% filter(backers_count>0) %>% group_by(status) %>% summarise(mean(avg_plg.brk))
-#   status     `mean(avg_plg.brk)`
-#   <chr>                    <dbl>
-# 1 failed                    56.9
-# 2 successful                92.1
-
-#excluding backers brings average pledge per backer up by ~25%
-
-
-# --- Investigating campaigns with no backers
-
-ks %>% count(backers_count==0)  
-#   backers_count == 0      n
-# 1              FALSE 189684
-# 2               TRUE  13163
-13163/(13163+189684) #~6.5% of projects have no backers
-
-ks %>% group_by(status) %>% count(backers_count==0)  
-#   status     `backers_count == 0`      n
-#   <chr>      <lgl>                 <int>
-# 1 failed     FALSE                 63281
-# 2 failed     TRUE                  13163
-# 3 successful FALSE                126403
-13163/(13163+63281) #17% of failed projects have no backers!!!
-
-ks %>%
-  ggplot() +
-  geom_density(aes(x=backers_count,fill=status),alpha=.4) +
-  xlim(0,500)
-
-ks %>%
-  ggplot() +
-  geom_density(aes(x=backers_count,fill=status),alpha=.4) +
-  xlim(0,200)
-
-ks %>%
-  ggplot() +
-  geom_density(aes(x=log(backers_count),fill=status),alpha=.4)
-#sub in actual values on axis
-
-
-ks %>%
-  ggplot() +
-  geom_density(aes(x=usd_pledged/backers_count,fill=status),alpha=.4) +
-  xlim(0,500)
 ```
 
 
