@@ -11,41 +11,42 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Data Prep
+## Data Prep & Review
 
-```{r Load}
-ks_b <- read.csv('Kickstarter_Campaigns_DataSet.csv')
-head(ks_b)
-class(ks_b)
-summary(ks_b)
-str(ks_b)
-
+```{r Load Libraries}
 library(tidyverse)
 library(lubridate)
 library(ggplot2)
 
 
-##############################################################################
-##
-## cleaning and review ------------------------------------------------------
-##
-##############################################################################
+```
 
-#fix dates and extract m/d/y, filter status
+```{r Load Data}
+
+#### Load data from file ------------------------------------------------------
+
+ks_b <- read.csv('Kickstarter_Campaigns_DataSet.csv')
+head(ks_b)
+str(ks_b)
+summary(ks_b)
+
+
+#### Filter and Column Formatting ------------------------------------------------------
+
 ks <- ks_b %>% 
-#remove projects with goal under 1$
+  #remove projects with goal under 1$
   filter(goal_usd>1) %>%
-  #filter for projects that are completed and not canceled
+  #filter for completed projects only
   filter(status=='successful'|status=='failed') %>%
   #format date strings into date class
   mutate(launched_at=mdy_hm(launched_at)) %>%
+  mutate(deadline=mdy_hm(deadline)) %>%
   #extract elements from launch date and deadline
   mutate(launch_year=year(launched_at)) %>% 
   mutate(launch_month=month(launched_at)) %>%
   mutate(launch_dom=day(launched_at)) %>%
   mutate(launch_dow=wday(launched_at)) %>%
   mutate(launch_hour=hour(launched_at)) %>%
-  mutate(deadline=mdy_hm(deadline)) %>% 
   mutate(dead_year=year(deadline)) %>% 
   mutate(dead_month=month(deadline)) %>% 
   mutate(dead_dom=day(deadline)) %>% 
@@ -58,29 +59,222 @@ ks <- ks_b %>%
   #name counts
   mutate(name_len=str_length(name)) %>%
   mutate(name_wrd=sapply(strsplit(name," "),length)) %>%
-  mutate(bin_status=ifelse(status=='successful',1,0))
+  #binary status field for modeling
+  mutate(status_binary=ifelse(status=='successful',1,0))
 
-
-
-
-# ----- review column summary ---------------------------------------------
 summary(ks)
-#no null values
+#no null values in any field
 
-## id
-#unremarkable
+```
 
-## name
-# unremarkable
+## EDA
 
-## currency
-# unremarkable
 
-## launched_at
-# break into discrete elements for analysis
+```{r id}
+#unremarkable 
+```
+
+```{r name}
+
+#--- name length ---------------------------------------------------------------
+ks %>%
+  ggplot(aes(x=name_len, col=status)) +
+  geom_density()
+#if this trend is real...interesting
+
+ks %>%
+  ggplot(aes(x=name_len, fill=status)) +
+  geom_histogram(position=position_dodge(1.7),alpha=1,col='grey3') +
+  theme_classic()
+# confirmed via histogram
+
+ks %>%
+  ggplot() +
+  geom_point(aes(y=log(goal_usd),x=name_len,col=status), size=.01)
+
+# name length, count of each, scale size bu pct success
+
+#--- name length x success w/ goal ----
+
+ks %>%
+  group_by(name_len) %>%
+  summarize(n(),
+            avg_goal=mean(goal_usd),
+            avg_backers=mean(backers_count),
+            succ_rate=sum(status=='successful')/n()) %>%
+  ggplot() +
+  geom_point(aes(x=name_len,y=succ_rate,size=avg_goal,color=avg_backers)) +
+  labs(title='Name Length vs Project Success',x='Characters in Name',y='Success Rate',
+       size="Average Goal USD", color="Average Backer Count") +
+  theme_linedraw()
+  #there appears to be a sweet spot for name length - 40-60 characters
+  #right side of graph may be due to low sample size, plot color as density
+
+
+#USE THIS
+ks %>%
+  group_by(name_len) %>%
+  summarize(total=n(),
+            avg_goal=mean(goal_usd),
+            avg_backers=mean(backers_count),
+            succ_rate=sum(status=='successful')/n()) %>%
+  ggplot() +
+  geom_point(aes(x=name_len,y=succ_rate,size=avg_goal,color=total)) +
+  labs(title='Name Length vs Project Success',x='Characters in Name',y='Success Rate',
+       size="Average Goal USD", color="Count") +
+  theme_linedraw() +
+  scale_color_gradient(low='grey',high='firebrick4') +
+  scale_x_continuous(breaks=seq(0,90,by=5))
+
+
+#--- name word ---------------------------------------------------------------
+ks %>%
+  ggplot(aes(x=name_wrd, col=status)) +
+  geom_density() +
+ scale_x_continuous(limits=c(0,40),breaks=seq(0,40)) 
+#lol fake, just density plot being dumb
+
+ks %>%
+  ggplot(aes(x=name_wrd, fill=status)) +
+  geom_histogram(alpha=.5,position=position_dodge(.7))
+# similar trends, tons more at length 7
+
+ks %>%
+  group_by(name_wrd) %>%
+  summarize(total=n(),
+            avg_goal=mean(goal_usd),
+            avg_backers=mean(backers_count),
+            succ_rate=sum(status=='successful')/n()) %>%
+  ggplot() +
+  geom_point(aes(x=name_wrd,y=succ_rate,size=avg_goal,color=total)) +
+  theme_linedraw()
+  #same as above, count seems more important that backer count
+
+
+#USE THIS
+ks %>%
+  group_by(name_wrd) %>%
+  summarize(total=n(),
+            avg_goal=mean(goal_usd),
+            avg_backers=mean(backers_count),
+            succ_rate=sum(status=='successful')/n()) %>%
+  ggplot() +
+  geom_point(aes(x=name_wrd,y=succ_rate,size=avg_goal,color=total)) +
+  labs(title='Name Word Count vs Project Success',x='Words in Name',y='Success Rate',
+       size="Average Goal USD", color="Count") +
+  theme_linedraw() +
+  scale_color_gradient(low='grey',high='firebrick4')
+
+
+#--- name word*char ---------------------------------------------------------------
+
+
+ks %>%
+  ggplot(aes(x=name_len,y=name_wrd)) + 
+  geom_point(aes(color=status),size=1)
+
+
+ks %>%
+  ggplot(aes(x=name_len/name_wrd)) + 
+  geom_density(aes(fill=status),alpha=.4) +
+  theme_linedraw()+
+  labs(title='Average Word Length',x='Chars in Word',y='Density') +  
+  xlim(0,20)
+
+ks %>% group_by(status) %>% summarize(mean(name_len/name_wrd))
+#  status     `mean(name_len/name_wrd)`
+#   <chr>                          <dbl>
+# 1 failed                          6.48
+# 2 successful                      6.21
+##
+#average name length for projects is 6.3
+
+```
+
+
+```{r currency & country}
+## currency -------------------------------------------------------------
+
+ks %>% 
+  group_by(currency) %>% 
+  summarize(total=n(), succ_rate=sum(status=='successful')/total) %>%
+  ggplot(aes(x=currency,y=succ_rate)) +
+  geom_point(aes(size=total)) +
+  ylim(0,1)
+
+
+## country -------------------------------------------------------------
+
+ks %>% 
+  group_by(country) %>% 
+  summarize(total=n(), succ_rate=sum(status=='successful')/total) %>%
+  ggplot(aes(x=country,y=succ_rate)) +
+  geom_point(aes(size=total)) +
+  theme_linedraw() +
+  ylim(0,1)
+
+#country and currency seem to track pretty closely - report just one?
+cor(ks$country, ks$currency)
+#need to convert to numbers
+unq_ctry <- data.frame(country=unique(ks$country),country_code=seq(1:length(unique(ks$country))))
+unq_ctry
+unq_curr <- data.frame(currency=unique(ks$currency),currency_code=seq(1:length(unique(ks$currency))))
+unq_curr
+
+cur.cnt <- ks %>% 
+  inner_join(unq_ctry,by='country') %>% 
+  inner_join(unq_curr,by='currency')
+
+cor(cur.cnt$country_code,cur.cnt$currency_code)
+# 0.927% correlation - going to drop currency from analysis
+
+
+
+country <- ks %>% group_by(country) %>% summarize(total=n(),
+                                       succ_rate=sum(status=='successful')/total,
+                                       avg_goal=mean(goal_usd),
+                                       avg_pct_fund=mean(pct_funded),
+                                       avg_bkrs=mean(backers_count))
+
+country
+
+#success rate (and relative number of projects)
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=succ_rate)) + 
+  geom_point(aes(y=total/sum(total)*5),shape=1) +
+  ylim(0,1)
+#usa percentage of projects is not listed
+
+#avg_goal
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=succ_rate)) + 
+  geom_point(aes(y=avg_goal/1e6),shape=1)
+# china is an ourlier but still manage similar success rate
+
+#avg_pct_fund
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=avg_pct_fund))
+#usa percentage of projects is not listed
+
+#avg_bkrs
+country %>%
+  ggplot(aes(x=country)) +
+  geom_point(aes(y=succ_rate)) + 
+  geom_point(aes(y=avg_bkrs/1e4),shape=1)
+
+
+```
+
+
+```{r id}
+## launched_at -------------------------------------------------------------
+# break into discrete elements for analysis - DONE
 
 ## backers_count -------------------------------------------------------------
-# some projects have no backers - eliminate?
+# some projects have no backers - eliminate? [decided not to but will report in backer stats]
 ks %>% count(backers_count==0)  
 #   backers_count == 0      n
 # 1              FALSE 189684
@@ -93,18 +287,16 @@ ks %>% group_by(status) %>% count(backers_count==0)
 # 1 failed     FALSE                 63281
 # 2 failed     TRUE                  13163
 # 3 successful FALSE                126403
-13163/(13163+63281) #17% of failed projects have no backers!!! ###############################################report this
+13163/(13163+63281) #17% of failed projects have no backers
 # huge difference between IQR and max value
 # investigate
 
 ## blurb ----------------------------------------------------------------------
 # unremarkable
 
-## country ----------------------------------------------------------------------
-# unremarkable
 
 ## deadline ----------------------------------------------------------------------
-# break into discrete elements for analysis
+# break into discrete elements for analysis - DONE
 
 ## slug ----------------------------------------------------------------------
 # unremarkable
@@ -114,7 +306,9 @@ ks %>% group_by(status) %>% count(backers_count==0)
 
 ## usd_pledged ----------------------------------------------------------------------
 # huge disparity between IQR and max
-# compare to amt pledged, backers
+# think about how relevant this value is when thinking about project success
+# the quantity itself doesnt seem relevant but instead how it relates to the goal
+# and means of acieving the goal - what's the pct funded and pledge per backer!
 
 ## sub_category ----------------------------------------------------------------------
 # unremarkable
@@ -124,14 +318,12 @@ ks %>% group_by(status) %>% count(backers_count==0)
 
 ## creator_id ----------------------------------------------------------------------
 # unremarkable
-# look for repeat projects by same creator
-
 
 ## blurb_length ----------------------------------------------------------------------
-# what is this? slug lenght?
+#unremarkable
 
 ## goal_usd ---------------------------------------------------------------------
-# IQR way low compared to max
+# IQR way low compared to max - outlines?
 summary(ks$goal_usd)
 
 ks %>% group_by(status) %>% summarize(max(goal_usd),total_projs=n(),'goal_2m' = sum(goal_usd>=2e6),'pct_2m'=goal_2m/total_projs)
@@ -139,13 +331,18 @@ ks %>% group_by(status) %>% summarize(max(goal_usd),total_projs=n(),'goal_2m' = 
 #   <chr>                <dbl>       <int>   <int>     <dbl>
 # 1 failed           135403380       76444     295 0.00386  
 # 2 successful         2000000      126403       4 0.0000316
+####
+# there were 251 unsuccessful proj >2m (44 failed at 2m)
 
-ks %>% count(goal_usd < 1)
-#goals for under $1 will be removed and considered unreal
+# noticed in graphical analysis there were projects with goal <=1, should I remove?
+# check country/currency first
+ks_b %>% filter(goal_usd<=1) %>% group_by(country) %>%summarize(n())  #274 US, 25 other
+ks_b %>% filter(goal_usd<=1) %>% group_by(currency) %>%summarize(n()) #274 US, 25 other
+#removal seems OK
 
 ## city ---------------------------------------------------------------------------------------------------------------
 # unremarkable
-#potentially overlay heat map of projects
+# potentially overlay heat map of projects
 
 ## duration ----------------------------------------------------------------------
 # very tightly grouped around 30 days
@@ -619,47 +816,7 @@ ks %>%
   geom_boxplot(aes(y=duration,x=status))
 
 
-##############################################################################
-##
-## Location
-##
-##############################################################################
 
-
-country <- ks %>% group_by(country) %>% summarize(total=n(),
-                                       succ_rate=sum(status=='successful')/total,
-                                       avg_goal=mean(goal_usd),
-                                       avg_pct_fund=mean(pct_funded),
-                                       avg_bkrs=mean(backers_count))
-
-country
-
-#success rate (and relative number of projects)
-country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=succ_rate)) + 
-  geom_point(aes(y=total/sum(total)*5),shape=1) +
-  ylim(0,1)
-#usa percentage of projects is not listed
-
-#avg_goal
-country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=succ_rate)) + 
-  geom_point(aes(y=avg_goal/1e6),shape=1)
-# china is an ourlier but still manage similar success rate
-
-#avg_pct_fund
-country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=avg_pct_fund))
-#usa percentage of projects is not listed
-
-#avg_bkrs
-country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=succ_rate)) + 
-  geom_point(aes(y=avg_bkrs/1e4),shape=1)
 
 
 ##############################################################################
@@ -726,68 +883,34 @@ ks$name[1] %>% str_length()
 
 # name and blurb
 
-```{r name length}
 
-#--- name length ---------------------------------------------------------------
-ks %>%
-  ggplot(aes(x=name_len, col=status)) +
-  geom_density()
-#if this trend is real...interesting
-
-ks %>%
-  ggplot(aes(x=name_len, fill=status)) +
-  geom_histogram(position=position_dodge(1.7),alpha=1,col='grey3') +
-  theme_classic()
-# confirmed via histogram
-
-ks %>%
-  ggplot() +
-  geom_point(aes(y=log(goal_usd),x=name_len,col=status), size=.01)
-
-# name length, count of each, scale size bu pct success
-
-ks %>%
-  group_by(name_len) %>%
-  summarize(n(),
-            avg_goal=mean(goal_usd),
-            avg_backers=mean(backers_count),
-            succ_rate=sum(status=='successful')/n()) %>%
-  ggplot() +
-  geom_point(aes(x=name_len,y=succ_rate,size=avg_goal,color=avg_backers)) +
-  theme_linedraw()
-  #consider scaling wiht custom color gradient
-
-#--- name word ---------------------------------------------------------------
-ks %>%
-  ggplot(aes(x=name_wrd, col=status)) +
-  geom_density() +
- scale_x_continuous(limits=c(0,40),breaks=seq(0,40)) 
-#lol fake, just density plot being dumb
-
-ks %>%
-  ggplot(aes(x=name_wrd, fill=status)) +
-  geom_histogram(alpha=.5,position=position_dodge(.7))
-# similar trends, tons more at length 7
-
-ks %>%
-  group_by(name_wrd) %>%
-  summarize(n(),
-            avg_goal=mean(goal_usd),
-            avg_backers=mean(backers_count),
-            succ_rate=sum(status=='successful')/n()) %>%
-  ggplot() +
-  geom_point(aes(x=name_wrd,y=succ_rate,size=avg_goal,color=avg_backers)) +
-  theme_linedraw()
-  #consider scaling wiht custom color gradient
 
 ```
 
 ## Build a model
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r log_model}
 summary(ks)
 
 plot(ks)
+
+##
+## Notes ------------------------------------------------------
+##
 
 
 #backers_count, usd_pledged, and avg_plg.bkr are too interdependant. 
@@ -796,14 +919,96 @@ plot(ks)
 
 #ignoring city and country. you could psuedo-launch from anywhere and likely has confounding data.
 
+
+##
+## All Vars ------------------------------------------------------
+##
+
 #backers_count + country + usd_pledged + sub_category + main_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd
 
-logit.overall = glm(status ~backers_count + country + usd_pledged + sub_category + main_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd,
+logit.overall = glm(status_binary ~backers_count + country + usd_pledged + sub_category + main_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd,
+                    family = 'binomial',
+                    data = ks)
+
+scatter.smooth(logit.overall$fit,
+               residuals(logit.overall, type = "deviance"),
+               lpars = list(col = "red"),
+               xlab = "Fitted Probabilities",
+               ylab = "Deviance Residual Values",
+               main = "Residual Plot for\nLogistic Regression of Admission Data")
+
+exp(logit.overall$coefficients)
+
+summary(logit.overall2)
+
+
+##
+## reduced vars ------------------------------------------------------
+##
+
+
+logit.overall2 = glm(status_binary ~ backers_count + sub_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd,
                     family = 'binomial',
                     data = ks)
 
 
+scatter.smooth(logit.overall2$fit,
+               residuals(logit.overall2, type = "deviance"),
+               lpars = list(col = "red"),
+               xlab = "Fitted Probabilities",
+               ylab = "Deviance Residual Values",
+               main = "Residual Plot for\nLogistic Regression of Admission Data")
 
+exp(logit.overall2$coefficients)
+
+summary(logit.overall2)
+
+##
+## elim insignificant values ------------------------------------------------------
+##
+
+
+logit.overall3 = glm(status_binary ~ backers_count + sub_category + goal_usd + duration + name_wrd,
+                    family = 'binomial',
+                    data = ks)
+
+
+scatter.smooth(logit.overall3$fit,
+               residuals(logit.overall3, type = "deviance"),
+               lpars = list(col = "red"),
+               xlab = "Fitted Probabilities",
+               ylab = "Deviance Residual Values",
+               main = "Residual Plot for\nLogistic Regression of Admission Data")
+
+exp(logit.overall3$coefficients)
+
+summary(logit.overall3)
+
+#the deviance is the same for all 3 models
+#is my data bad? too many outliers?
+#would it be easier if I restricted to a smaller size
+```
+
+
+```{r log_model_reduced_goal}
+
+
+ks.r <- ks %>% filter(goal_usd<50000)
+
+logit.overall.r = glm(status_binary ~backers_count + country + usd_pledged + sub_category + main_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd,
+                    family = 'binomial',
+                    data = ks.r)
+
+scatter.smooth(logit.overall.r$fit,
+               residuals(logit.overall.r, type = "deviance"),
+               lpars = list(col = "red"),
+               xlab = "Fitted Probabilities",
+               ylab = "Deviance Residual Values",
+               main = "Residual Plot for logt.overall.r")
+
+exp(logit.overall$coefficients)
+
+summary(logit.overall2)
 
 
 
