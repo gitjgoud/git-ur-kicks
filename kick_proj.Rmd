@@ -11,13 +11,9 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Data Prep
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r}
+```{r Load}
 ks_b <- read.csv('Kickstarter_Campaigns_DataSet.csv')
 head(ks_b)
 class(ks_b)
@@ -26,16 +22,21 @@ str(ks_b)
 
 library(tidyverse)
 library(lubridate)
+library(ggplot2)
 
 
 ##############################################################################
 ##
-## cleaning and review
+## cleaning and review ------------------------------------------------------
 ##
 ##############################################################################
 
 #fix dates and extract m/d/y, filter status
 ks <- ks_b %>% 
+#remove projects with goal under 1$
+  filter(goal_usd>1) %>%
+  #filter for projects that are completed and not canceled
+  filter(status=='successful'|status=='failed') %>%
   #format date strings into date class
   mutate(launched_at=mdy_hm(launched_at)) %>%
   #extract elements from launch date and deadline
@@ -50,14 +51,16 @@ ks <- ks_b %>%
   mutate(dead_dom=day(deadline)) %>% 
   mutate(dead_dow=wday(deadline)) %>%
   mutate(dead_hour=hour(deadline)) %>% 
-  #filter for projects that are completed and not canceled
-  filter(status=='successful'|status=='failed') %>%
   #calculate percent funded
   mutate(pct_funded=usd_pledged/goal_usd) %>%
   #calculates average pledge amount
   mutate(avg_plg.bkr=ifelse(backers_count > 0,usd_pledged/backers_count,0)) %>%
-  #remove projects with goal under 1$
-  filter(goal_usd>1)
+  #name counts
+  mutate(name_len=str_length(name)) %>%
+  mutate(name_wrd=sapply(strsplit(name," "),length)) %>%
+  mutate(bin_status=ifelse(status=='successful',1,0))
+
+
 
 
 # ----- review column summary ---------------------------------------------
@@ -346,10 +349,6 @@ ks %>% group_by(status) %>% count(backers_count==0)
 # 3 successful FALSE                126403
 13163/(13163+63281) #17% of failed projects have no backers!!!
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in categories
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in launch timing
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! look for trends in goals/funded - DONE
-
 ks %>%
   ggplot() +
   geom_density(aes(x=backers_count,fill=status),alpha=.4) +
@@ -427,7 +426,9 @@ sub_cat %>%
   geom_point(aes(y=pct_succ)) +
   geom_point(aes(y=avg_plg/100),col='green4',shape=1)
 
-#redo - plot % success vs goal, color dots by category, scale size by number of projects ---------------------------------------------------!!!!!!!
+
+
+#redo - plot % success vs goal, color dots by category, scale size by number of projects ####################################################!!!!!!!
 
 sub_cat %>%
   ggplot(aes(x=reorder(sub_category, pct_succ))) +
@@ -715,13 +716,93 @@ creator3 %>%
 ##############################################################################
 
 #boxplots
+?stringr
 
+ks$name[1] %>% str_length()
+#name lenght
+#num words
 #stringr count strings
+```
+
+# name and blurb
+
+```{r name length}
+
+#--- name length ---------------------------------------------------------------
+ks %>%
+  ggplot(aes(x=name_len, col=status)) +
+  geom_density()
+#if this trend is real...interesting
+
+ks %>%
+  ggplot(aes(x=name_len, fill=status)) +
+  geom_histogram(position=position_dodge(1.7),alpha=1,col='grey3') +
+  theme_classic()
+# confirmed via histogram
+
+ks %>%
+  ggplot() +
+  geom_point(aes(y=log(goal_usd),x=name_len,col=status), size=.01)
+
+# name length, count of each, scale size bu pct success
+
+ks %>%
+  group_by(name_len) %>%
+  summarize(n(),
+            avg_goal=mean(goal_usd),
+            avg_backers=mean(backers_count),
+            succ_rate=sum(status=='successful')/n()) %>%
+  ggplot() +
+  geom_point(aes(x=name_len,y=succ_rate,size=avg_goal,color=avg_backers)) +
+  theme_linedraw()
+  #consider scaling wiht custom color gradient
+
+#--- name word ---------------------------------------------------------------
+ks %>%
+  ggplot(aes(x=name_wrd, col=status)) +
+  geom_density() +
+ scale_x_continuous(limits=c(0,40),breaks=seq(0,40)) 
+#lol fake, just density plot being dumb
+
+ks %>%
+  ggplot(aes(x=name_wrd, fill=status)) +
+  geom_histogram(alpha=.5,position=position_dodge(.7))
+# similar trends, tons more at length 7
+
+ks %>%
+  group_by(name_wrd) %>%
+  summarize(n(),
+            avg_goal=mean(goal_usd),
+            avg_backers=mean(backers_count),
+            succ_rate=sum(status=='successful')/n()) %>%
+  ggplot() +
+  geom_point(aes(x=name_wrd,y=succ_rate,size=avg_goal,color=avg_backers)) +
+  theme_linedraw()
+  #consider scaling wiht custom color gradient
+
 ```
 
 ## Build a model
 
 ```{r log_model}
+summary(ks)
+
+plot(ks)
+
+
+#backers_count, usd_pledged, and avg_plg.bkr are too interdependant. 
+#is usd_pledged useful? it feels somewhat redundant with goal_usd, as being over_funded doesn't inform the answer of success any more than the combination of goal_usd and status do
+#similarly, pct_funded does not seem useful
+
+#ignoring city and country. you could psuedo-launch from anywhere and likely has confounding data.
+
+#backers_count + country + usd_pledged + sub_category + main_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd
+
+logit.overall = glm(status ~backers_count + country + usd_pledged + sub_category + main_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd,
+                    family = 'binomial',
+                    data = ks)
+
+
 
 
 
