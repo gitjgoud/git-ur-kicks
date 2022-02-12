@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
 library(ggplot2)
-
+library(gridExtra)
 
 ```
 
@@ -234,37 +234,122 @@ country <- ks %>% group_by(country) %>% summarize(total=n(),
                                        succ_rate=sum(status=='successful')/total,
                                        avg_goal=mean(goal_usd),
                                        avg_pct_fund=mean(pct_funded),
-                                       avg_bkrs=mean(backers_count))
+                                       avg_bkrs=mean(backers_count),
+                                       avg_plg=mean(avg_plg.bkr))
 
 country
 
-#success rate (and relative number of projects)
-country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=succ_rate)) + 
-  geom_point(aes(y=total/sum(total)*5),shape=1) +
-  ylim(0,1)
-#usa percentage of projects is not listed
+#start with this plot - show success rate vs country
+#average success rate fairly well in-line with US
 
-#avg_goal
-country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=succ_rate)) + 
-  geom_point(aes(y=avg_goal/1e6),shape=1)
-# china is an ourlier but still manage similar success rate
+#compare mean of country group succ vs overall - use overall
+?geom_hline()
+mean(country$succ_rate)
+sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed'))
 
-#avg_pct_fund
+#suspect we're seeing effect of outliers because country is not a strong factor itself
 country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=avg_pct_fund))
-#usa percentage of projects is not listed
+  ggplot(aes(x=reorder(country,succ_rate),y=succ_rate))+
+  geom_point(aes(size=total,col=avg_goal)) +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  ylim(0,1)+
+  theme_linedraw() +
+  labs(title='Country vs Success Rate',x='',y='Success Rate',
+       size="Num Proj", color="Average Goal") 
+#leave x=axis ordet the same and explore other variables
 
-#avg_bkrs
 country %>%
-  ggplot(aes(x=country)) +
-  geom_point(aes(y=succ_rate)) + 
-  geom_point(aes(y=avg_bkrs/1e4),shape=1)
+  ggplot(aes(x=reorder(country,succ_rate),y=log(total))) +
+  geom_point(aes(size=succ_rate,col=avg_goal)) +
+  theme_linedraw() +
+  labs(title='Country vs Number Projects',x='',y='log(Total projects)',
+       size="Succ Rate", color="Average Goal") 
+#plot highlights the high success rates are probably outliers
 
+country %>%
+  ggplot(aes(x=reorder(country,succ_rate),y=avg_plg)) +
+  geom_point(aes(size=succ_rate,col=avg_goal)) +
+  theme_linedraw() +
+  labs(title='Country vs Number Projects',x='',y='Average Pledge',
+       size="Succ Rate", color="Average Goal") 
+#plot highlights the high success rates are probably outliers
+
+country %>%
+  ggplot(aes(x=reorder(country,succ_rate),y=avg_bkrs)) +
+  geom_point(aes(size=succ_rate,col=avg_goal)) +
+  theme_linedraw() +
+  labs(title='Country vs Number Projects',x='',y='Average Num Backers',
+       size="Succ Rate", color="Average Goal") 
+
+
+# --- tried plotting as grid - too much info in size/color. reducing clutter... ----
+
+
+count1 <-country %>%
+  ggplot(aes(x=reorder(country,succ_rate),y=succ_rate))+
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  ylim(0,1)+
+  theme_linedraw() +
+  labs(title='Country vs Success Rate',x='',y='Success Rate',
+       size="Num Proj", color="Average Goal") 
+#leave x=axis ordet the same and explore other variables
+
+count2 <-country %>%
+  ggplot(aes(x=reorder(country,succ_rate),y=log(total))) +
+  geom_point() +
+  theme_linedraw() +
+  labs(title='Country vs Number Projects',x='',y='log(Total projects)',
+       size="Succ Rate", color="Average Goal") 
+#plot highlights the high success rates are probably outliers
+
+
+
+count3 <-country %>%
+  ggplot(aes(x=reorder(country,succ_rate),y=avg_plg)) +
+  geom_hline(yintercept = mean(ks$avg_plg.bkr))+
+  geom_point() +
+  theme_linedraw() +
+  labs(title='Country vs Average Pledge',x='',y='Average Pledge',
+       size="Succ Rate", color="Average Goal") 
+#plot highlights the high success rates are probably outliers
+
+count4<-country %>%
+  ggplot(aes(x=reorder(country,succ_rate),y=avg_bkrs)) +
+  geom_hline(yintercept=mean(ks$backers_count)) +
+  geom_point() +
+  theme_linedraw() +
+  labs(title='Country vs Average Backer Count',x='',y='Average Num Backers',
+       size="Succ Rate", color="Average Goal") 
+
+country %>%
+  ggplot(aes(x=reorder(country,succ_rate),y=avg_goal)) +
+  geom_hline(yintercept=mean(ks$goal_usd)) +
+  geom_point() +
+  theme_linedraw() +
+  labs(title='Country vs Average Backer Count',x='',y='Average Num Backers',
+       size="Succ Rate", color="Average Goal") 
+
+
+grid.arrange(count1,count2,count3,count4,nrow=2)
+#the point is not to break down every facet of country, but show it is likely a confounding factor
+#compare us to non-US
+
+
+## ---- US vs Non-US ----
+
+ks %>% 
+  mutate(foriegn=ifelse(country=='US','US','Foriegn')) %>% 
+  group_by(foriegn) %>%
+  summarize(total=n(),
+            succ_rate=sum(status=='successful')/total,
+            avg_goal=mean(goal_usd),
+            avg_bkrs=mean(backers_count),
+            avg_plg=mean(avg_plg.bkr))
+# foriegn  total succ_rate avg_goal avg_bkrs avg_plg
+#   <chr>    <int>     <dbl>    <dbl>    <dbl>   <dbl>
+# 1 Foriegn  63662     0.608   37545.     152.    73.0
+# 2 US      138905     0.630   36650.     175.    76.2
 
 ```
 
