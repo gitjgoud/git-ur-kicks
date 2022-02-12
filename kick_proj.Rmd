@@ -67,12 +67,178 @@ summary(ks)
 
 ```
 
+## Evaluate For Outliers
+Try to determine if outliers exist for numerical fields
+
+Reviewed several sources for outlier detection in data, few were useful
+- data not normally distributed, z-scre method not applicable {https://machinelearningmastery.com/how-to-use-statistics-to-identify-outliers-in-data/}
+- advanced methods were too challenging to implement {https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm},etc
+- most evaluated using IQR method when possible (3x) {https://machinelearningmastery.com/how-to-use-statistics-to-identify-outliers-in-data/}
+- when no methods applied (IQR method removes too much data), eliminated top 0.05% as extreme outliers
+
+- suggest revisiting analysis after receiving feedback
+
+```{r outliers}
+summary(ks)
+temp %>%                  # Summary by gender purrr
+  split(.$Gender) %>%
+  map(summary)
+
+
+#--- backers_count ----
+summary(ks$backers_count)
+# Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+#  0.0      5.0     32.0    167.7    102.0 105857.0 
+###
+#huge gap between IQR and max suggests outlier
+
+
+#the difference is significant for both outcomes, but two orders of magnitude greater for successful
+ks %>% 
+  select(status,backers_count) %>%
+  split(.$status) %>%
+  map(summary)
+# $failed
+#     status          backers_count    
+#  Length:76432       Min.   :   0.00  
+#  Class :character   1st Qu.:   1.00  
+#  Mode  :character   Median :   3.00  
+#                     Mean   :  11.71  
+#                     3rd Qu.:   9.00  
+#                     Max.   :4435.00  
+# 
+# $successful
+#     status          backers_count     
+#  Length:126135      Min.   :     1.0  
+#  Class :character   1st Qu.:    33.0  
+#  Mode  :character   Median :    73.0  
+#                     Mean   :   262.3  
+#                     3rd Qu.:   173.0  
+#                     Max.   :105857.0 
+
+#plots confirm there are clearly outliers
+ks %>%
+  ggplot(aes(x=backers_count)) +
+  geom_histogram()
+
+ks %>%
+  ggplot(aes(y=backers_count,x=status)) +
+  geom_boxplot()
+
+# consider IQR: Q3x3
+ks %>% count()
+ks %>% filter(backers_count<=102*3) %>% count()
+184124/202567 #removes ~10% of data, too much to be considered outliers
+
+# considered other statistical methods such as {https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm}
+# too complicated - try slicing off top .05%
+# note - the actual filter will remove based on a value, not percentage, to prevent cascading effects of slicing percent for each variable
+
+ks %>% slice_min(backers_count,prop = .995) %>% min()
+  
+ks %>%
+  ggplot(aes(x=backers_count)) +
+  geom_histogram(aes(fill=status),alpha=.7,position=position_dodge(20))
+#looks much more reasonable
+
+ks %>% slice_min(backers_count,prop = .995) %>%
+  ggplot(aes(y=backers_count,x=status)) +
+  geom_boxplot(aes(fill=status))
+
+
+#--- usd_pledged ----
+
+# the point of this analysis is to determine what factors influence success
+# usd_pledged on it's own fails to help answer this question directly in a meaningful way
+# it either exceeds goal_usd (success) or does not (failure) or provide deep insights
+# into why a project failed besides 'didn't get enough money'
+
+
+#--- goal_usd ----
+
+summary(ks$goal_usd)
+
+ks %>%
+  ggplot(aes(x=goal_usd)) +
+  geom_histogram()
+
+ks %>%
+  ggplot(aes(y=goal_usd,x=status)) +
+  geom_boxplot()
+
+#IQRx3 not viable
+ks %>% count()
+ks %>% filter(goal_usd<=12000*3) %>% count()
+184518/202567 #removes ~9% of data, too much to be considered outliers
+
+#shave off top 0.05%
+
+ks %>% slice_min(goal_usd,prop = .995) %>%
+  ggplot(aes(x=goal_usd)) +
+  geom_histogram(aes(fill=status),alpha=.7,position=position_dodge(20))
+
+ks %>% slice_min(goal_usd,prop = .995) %>%
+  ggplot(aes(y=goal_usd,x=status)) +
+  geom_boxplot(aes(fill=status))
+
+#--- duration ----
+
+ks %>%
+  ggplot(aes(x=duration)) +
+  geom_histogram()
+
+ks %>%
+  ggplot(aes(y=duration,x=status)) +
+  geom_boxplot()
+
+#possible outliers, consider IQR
+ks %>% count()
+ks %>% filter(duration<=35*3) %>% count()
+202567/202567 #removes no data, filter not applied
+
+#--- avg_plg.bkr ----
+
+ks %>%
+  ggplot(aes(x=avg_plg.bkr)) +
+  geom_histogram()
+
+ks %>%
+  ggplot(aes(y=avg_plg.bkr,x=status)) +
+  geom_boxplot()
+
+#possible outliers, consider IQR
+ks %>% count()
+ks %>% filter(avg_plg.bkr<=86.19*3) %>% count()
+194954/202567 #removes ~4% of data, too much
+
+#shave off top 0.05%
+
+ks %>% slice_min(avg_plg.bkr,prop = .995) %>%
+  ggplot(aes(x=avg_plg.bkr)) +
+  geom_histogram(aes(fill=status),alpha=.7,position=position_dodge(20))
+
+ks %>% slice_min(avg_plg.bkr,prop = .995) %>%
+  ggplot(aes(y=avg_plg.bkr,x=status)) +
+  geom_boxplot(aes(fill=status))
+
+#revisit after applying other slices, as this may
+
+```
+
+```{r Outliers filter}
+
+ks %>% 
+  slice_min(backers_count,prop = .995) %>%
+  slice_min(goal_usd,prop = .995) %>%
+  slice_min(avg_plg.bkr,prop = .995) %>%
+  
+
+
+```
+
+
 ## EDA
 
-
-```{r id}
-#unremarkable 
-```
 
 ```{r name}
 
@@ -336,7 +502,7 @@ grid.arrange(count1,count2,count3,count4,nrow=2)
 #compare us to non-US
 
 
-## ---- US vs Non-US ----
+## ---- US vs Foreign ----
 
 ks %>% 
   mutate(foriegn=ifelse(country=='US','US','Foriegn')) %>% 
@@ -351,7 +517,7 @@ ks %>%
 # 1 Foriegn  63662     0.608   37545.     152.    73.0
 # 2 US      138905     0.630   36650.     175.    76.2
 
-ks %>% 
+foreign <- ks %>% 
   mutate(foriegn=ifelse(country=='US','US','Foriegn')) %>% 
   group_by(status,foriegn) %>%
   summarize(total=n(),
@@ -364,6 +530,7 @@ ks %>%
 # 2 failed     US      51463   82829.     11.9    46.1
 # 3 successful Foriegn 38693    7533.    243.     88.5
 # 4 successful US      87442    9471.    271.     93.9
+
 
 
 ```
@@ -425,7 +592,7 @@ bkr2 <-ks %>% filter(avg_plg.bkr<250) %>%
 
 grid.arrange(bkr1,bkr2,ncol=2)
 
-#--- Scatter/pct_funded and backers
+#--- Scatter/pct_funded and backers ----
 
 
 #pattern break at funding line probably has to do with shift in backer behavior
@@ -455,11 +622,20 @@ grid.arrange(bkr3,bkr4,nrow=2)
 ```
 
 
-```{r TBD}
+```{r Goal & Pct Pledged}
 
-## goal_usd ---------------------------------------------------------------------
-# IQR way low compared to max - outlines?
 summary(ks$goal_usd)
+
+#--- min goals (~$1) ----
+
+# noticed in graphical analysis there were projects with goal <=1, should I remove?
+# check country/currency first
+ks_b %>% filter(goal_usd<=1) %>% group_by(country) %>%summarize(n())  #274 US, 25 other
+ks_b %>% filter(goal_usd<=1) %>% group_by(currency) %>%summarize(n()) #274 US, 25 other
+#removal seems OK
+25/300
+
+#--- max goals (>$2mil) ---
 
 ks %>% group_by(status) %>% summarize(max(goal_usd),total_projs=n(),'goal_2m' = sum(goal_usd>=2e6),'pct_2m'=goal_2m/total_projs)
 #   status     `max(goal_usd)` total_projs goal_2m    pct_2m
@@ -469,43 +645,8 @@ ks %>% group_by(status) %>% summarize(max(goal_usd),total_projs=n(),'goal_2m' = 
 ####
 # there were 251 unsuccessful proj >2m (44 failed at 2m)
 
-# noticed in graphical analysis there were projects with goal <=1, should I remove?
-# check country/currency first
-ks_b %>% filter(goal_usd<=1) %>% group_by(country) %>%summarize(n())  #274 US, 25 other
-ks_b %>% filter(goal_usd<=1) %>% group_by(currency) %>%summarize(n()) #274 US, 25 other
-#removal seems OK
-
-## city ---------------------------------------------------------------------------------------------------------------
-# unremarkable
-# potentially overlay heat map of projects
-
-## duration ----------------------------------------------------------------------
-# very tightly grouped around 30 days
-# 98 days outlier?
 
 
-
-
-```
-
-
-
-
-
-```{r cars}
-##############################################################################
-##
-## Status
-##
-##############################################################################
-
-ks %>% 
-  group_by(status) %>% 
-  summarise(total=n()) %>%
-  ggplot(aes(x="",y=total,fill=status)) + 
-  geom_bar(stat='identity',width=1,color='white') + 
-  coord_polar('y',start=0) +
-  theme_void()
 
 ##############################################################################
 ##
@@ -622,12 +763,21 @@ ks %>% group_by(status) %>% summarize(sum(pct_funded<.1),sum(pct_funded<.01),sum
 ks %>%
   split(.$status) %>%
   map(summary)
+```
 
 
+```{r cars}
+##############################################################################
+##
+## Status
+##
+##############################################################################
 
-
-
-
+ks %>% 
+  group_by(status) %>% 
+  summarise(total=n()) %>%
+  ggplot(aes(x="",y=total,fill=status)) + 
+  geom_bar(stat='identity',width=1,color='white')
 
 ```
 
