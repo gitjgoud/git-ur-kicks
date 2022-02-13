@@ -23,7 +23,6 @@ library(plyr) #needed to mutate using round_any, REMOVE AFTER OR IT WILL BREAK P
 ```
 
 ```{r Load Data}
-
 #### Load data from file ------------------------------------------------------
 
 ks_b <- read.csv('Kickstarter_Campaigns_DataSet.csv')
@@ -69,9 +68,19 @@ ks <- ks_b %>%
   filter(goal_usd<=5e05) %>%
   filter(avg_plg.bkr<=724)
 
+library(plyr)  
+detach(package:plyr, unload=T)
+detach(package:dplyr, unload=T)
+library(dplyr)
 
 summary(ks)
 #no null values in any field
+```
+
+```{r export clean ks df for app}
+
+write.csv(ks,file='clean_kickstarter_data.csv',row.names = F)
+
 
 ```
 
@@ -1179,8 +1188,9 @@ ks %>%
 ```
 
 ## Build a model
-
-This didn't actually work
+- First few attempts didn't work
+- Spent a day attempting to remove outliers from data and identify important factors
+- Got a working model with 79.5% prediction accuracy using original dataset
 
 ```{r log_model}
 # ---- Second Attempt ----
