@@ -13,12 +13,12 @@ logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + 
                         data = ks_app)
 
 #load with initial values
-user_proj = with(ks_app, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
+user_proj = with(ks_app, data.frame(avg_plg.bkr=round(mean(avg_plg.bkr)),
                                   sub_category='technology',
                                   goal_usd=3000,
-                                  duration=mean(duration),
+                                  duration=round(mean(duration)),
                                   launch_hour=median(launch_hour),
-                                  name_len=mean(name_len)))
+                                  name_len=round(mean(name_len))))
 
 ui <- dashboardPage(
   dashboardHeader(title = "Can You Kickstart?"),
@@ -33,30 +33,34 @@ ui <- dashboardPage(
       # First tab content
       tabItem(tabName = "dashboard",
               fluidRow(
-              box(
-                  textInput('name',
-                            label="Project Name",
-                            value='name your project!'),
-                  textInput('blurb',
-                            label="Project Blurb",
-                            value="what's it about?"),
-                  selectizeInput("category",
-                                 label='Project Category',
-                                 choices=unique(ks_app[,"sub_category"])
-                                 ),
-                  sliderInput('duration',
-                              label='Campaign Duration',
-                              min=0,
-                              max=90,
-                              value=30)
-                  #add BS factor
-                  ),
-                box(
+              box(title = "Project Parameters",
+                  width = 12,
+                  solidHeader = T,
+                  status = 'primary',
+                  column(width=6,
+                    textInput('name',
+                              label="Project Name",
+                              value='name your project!'),
+                    textInput('blurb',
+                              label="Project Blurb",
+                              value="what's it about?"),
+                    selectizeInput("category",
+                                   label='Project Category',
+                                   choices=unique(ks_app[,"sub_category"])
+                                   ),
+                    sliderInput('duration',
+                                label='Campaign Duration',
+                                min=1,
+                                max=90,
+                                value=30)
+                    #add more BS factors if time allows
+                    ),
+                  column(width=6,
                   numericInput("goal_usd",
                                label = "Funding Goal [USD]",
                                value = 1000),
                   numericInput("est_pledge",
-                               label = "Estimated Pledge",
+                               label = "Estimated Average Pledge",
                                value = 20),
                   dateInput('launch_date',
                             label = 'Launch Date',
@@ -66,20 +70,28 @@ ui <- dashboardPage(
                               min=0,
                               max=23,
                               value=12)
+                  )
                 )
               ),
               fluidRow(
-                box(
-                  actionButton('calculate',
-                               label='Predict')
-                ),
-                textOutput('percent_success')
+                box(title= "Predict Chances of Success",
+                    width = 12,
+                    solidHeader = T,
+                    status = 'success',
+                    column(width=4, offset=2,
+                           actionButton('calculate',
+                                        label='Predict')
+                    ),
+                    column(width=6,
+                           textOutput('percent_success')
+                    )
+                )
               ),
               fluidRow(
                 box(width=12,
                     collapsible = T,
                     solidHeader = T,
-                    title = "Project Parameters",
+                    title = "Prediction History",
                     status="warning",
                     collapsed = T,
                   DT::dataTableOutput('project_params')

@@ -22,7 +22,7 @@ library(plyr) #needed to mutate using round_any, REMOVE AFTER OR IT WILL BREAK P
 
 ```
 
-```{r Load Data}
+```{r Load Data & Filter/Mutate}
 #### Load data from file ------------------------------------------------------
 
 ks_b <- read.csv('Kickstarter_Campaigns_DataSet.csv')
@@ -1192,7 +1192,7 @@ ks %>%
 - Spent a day attempting to remove outliers from data and identify important factors
 - Got a working model with 79.5% prediction accuracy using original dataset
 
-```{r log_model w/ export dataset}
+```{r log_model w/ export dataset - testing for app}
 #this should be the same as below but code uses exported CSV for data
 #tying to figure out how to get shiny app to use this 
 
