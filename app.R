@@ -1,5 +1,5 @@
 ui <- dashboardPage(
-  dashboardHeader(title = "Basic dashboard"),
+  dashboardHeader(title = "Can You Kickstart?"),
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
