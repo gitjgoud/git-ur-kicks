@@ -865,8 +865,8 @@ ks %>%
   geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
   scale_x_continuous(limits=c(2009,2020),breaks=seq(2009,2020)) +
   ylim(c(0,1)) +
-  theme(panel.grid.minor=element_blank()) +
   theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
   labs(title='Launch Year Tends',x='Year',y='Percent success')
 #interesting drop in 2014 then trending back up
 
@@ -1103,61 +1103,34 @@ ks %>%
   geom_violin(aes(fill=status)) +
   geom_boxplot(alpha=.5) +
   theme_linedraw() +
-  scale_y_continuous()
+  scale_y_continuous(limits=c(0,100),breaks=seq(0,100,by=10)) 
   
-
+#USE THIS
+ks %>%
+  group_by(duration) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=duration,y=pct_succ,size=projects,col=avg_goal)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(0,100),breaks=seq(0,100,by=10)) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Launch Year Tends',x='Year',y='Percent success')
 
 
 ```
 
 
-```{r Launch Timing}
-##############################################################################
-##
-## Creator Experience
-##
-##############################################################################
+```{r Creator Experience}
 
 
-#creators with more than one project
 
-creator <- ks %>% 
-  group_by(creator_id) %>% 
-  summarise(total_proj=n(),
-            succ_rate=sum(status=='successful')/total) %>%
-  filter(total_proj>1)
-
-creator %>%
-  ggplot() +
-  geom_point(aes(x=total,y=succ_rate))
-
-#------------
-creator2 <- ks %>% 
-  group_by(creator_id,status) %>% 
-  summarise(total_proj=n()) %>%
-  filter(total_proj>1)
-
-creator2
-  
-creator2 %>%
-  ggplot() +
-  geom_density(aes(x=total_proj,fill=status),alpha=.4) +
-  xlim(0,20)
-
-#--------------------
-creator3 <- ks %>% 
-  group_by(creator_id,status) %>% 
-  summarise(total_proj=n())
-
-creator3
-  
-creator3 %>%
-  ggplot() +
-  geom_density(aes(x=total_proj,fill=status),alpha=.4) +
-  xlim(0,10)
-# this is kinda interesting
-#should be 0 to 1
-# plot 1 proj vs more than one
 ```
 
 ## Build a model
