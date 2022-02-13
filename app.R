@@ -25,8 +25,22 @@ ui <- dashboardPage(skin='black',
   dashboardSidebar(
     sidebarMenu(
       menuItem("Success Predictor", tabName = "predictor", icon = icon("hat-wizard")),
-      menuItem("Project Overview", tabName = "overview", icon = icon("splotch")),
-      menuItem("EDA",tabName = 'eda', icon= icon("gears"))
+      menuItem("Project Overview", tabName = "overview", icon = icon("splotch"),
+               menuItem('Objective', tabName='objective'),
+               menuItem('Data', tabName = 'prjdata')
+               ),
+      menuItem("EDA",tabName = 'eda', icon= icon("gears"),
+               menuItem('Funding Goal', tabName = 'eda_funding'),
+               menuItem('Backer Trends', tabName = 'eda_backers'),
+               menuItem('Name & Blurb', tabName = 'eda_name'),
+               menuItem('Location', tabName = 'eda_location'),
+               menuItem('Category', tabName = 'eda_category'),
+               menuItem('Launch Timing', tabName = 'eda_timing'),
+               menuItem('Duration', tabName= 'eda_duration'),
+               menuItem('Experience', tabName = 'eda_experience'),
+               selectInput(inputId = 'mcm',label='some label',
+                           multiple = T, choices= c('1','2','3','4'))
+               )
     )
   ),
   dashboardBody(
