@@ -20,18 +20,19 @@ user_proj = with(ks_app, data.frame(avg_plg.bkr=round(mean(avg_plg.bkr)),
                                   launch_hour=median(launch_hour),
                                   name_len=round(mean(name_len))))
 
-ui <- dashboardPage(
+ui <- dashboardPage(skin='black',
   dashboardHeader(title = "Can You Kickstart?"),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Widgets", tabName = "widgets", icon = icon("th"))
+      menuItem("Success Predictor", tabName = "predictor", icon = icon("hat-wizard")),
+      menuItem("Project Overview", tabName = "overview", icon = icon("splotch")),
+      menuItem("EDA",tabName = 'eda', icon= icon("gears"))
     )
   ),
   dashboardBody(
     tabItems(
       # First tab content
-      tabItem(tabName = "dashboard",
+      tabItem(tabName = "predictor",
               fluidRow(
               box(title = "Project Parameters",
                   width = 12,
@@ -100,9 +101,13 @@ ui <- dashboardPage(
       ),
       
       # Second tab content
-      tabItem(tabName = "widgets",
+      tabItem(tabName = "overview",
               h2("Widgets tab content")
-      )
+      ),
+      
+      #third tab item
+      tabItem(tabName = "eda",
+              h2("Testing"))
     )
   )
 )
