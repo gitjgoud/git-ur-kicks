@@ -944,7 +944,6 @@ ks %>%
   theme(panel.grid.minor=element_blank()) +
   labs(title='Launch Hour Trends',x='Hour (UTC)',y='Percent success')
 
-?sec_axis
 
 #--- Old Stuff ----
 
@@ -999,23 +998,91 @@ grid.arrange(p_lm,p_ldom,p_ldow,p_lhour, nrow=2)
 
 
 ```{r Deadline}
-##############################################################################
-##
-## Deadline
-##
-##############################################################################
+
+
+#USE THIS
+ks %>%
+  group_by(dead_month) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=dead_month,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(1,12),breaks=seq(1,12)) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Deadline Month Tends',x='Month',y='Percent success')+
+  scale_color_gradient(high='grey',low='firebrick4')
+
+
+#USE THIS
+ks %>%
+  group_by(dead_dom) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=dead_dom,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(1,31),breaks=seq(1,31)) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Deadline Day Tends - Day of Month',x='Day of Month',y='Percent success')+
+  scale_color_gradient(high='grey',low='firebrick4')
+
+#USE THIS
+ks %>%
+  group_by(dead_dow) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=dead_dow,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(1,7),breaks=seq(1,7)) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Deadline Day Tends - Day of Week',x='Day of week',y='Percent success')+
+  scale_color_gradient(high='grey',low='firebrick4')
+
+#USE THIS
+ks %>%
+  group_by(dead_hour) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=dead_hour,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(sec.axis = sec_axis(~ .-5,name="Hour (EST)"),
+                     limits=c(0,23),breaks=seq(0,23),) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Deadline Hour Trends',x='Hour (UTC)',y='Percent success')+
+  scale_color_gradient(high='grey',low='firebrick4')
 
 
 ```
 
 
-```{r Launch Timing}
-##############################################################################
-##
-## Duration
-##
-##############################################################################
-
+```{r Duration}
 
 ks %>% group_by(status) %>% summarize(mean(duration),min(duration),max(duration),median(duration))
 #   status     `mean(duration)` `min(duration)` `max(duration)` `median(duration)`
@@ -1032,8 +1099,15 @@ ks %>%
   geom_point(aes(x=duration,y=log(goal_usd),col=status),size=.01)
 
 ks %>%
-  ggplot() +
-  geom_boxplot(aes(y=duration,x=status))
+  ggplot(aes(y=duration,x=status)) +
+  geom_violin(aes(fill=status)) +
+  geom_boxplot(alpha=.5) +
+  theme_linedraw() +
+  scale_y_continuous()
+  
+
+
+
 ```
 
 
