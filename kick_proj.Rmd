@@ -1192,6 +1192,53 @@ ks %>%
 - Spent a day attempting to remove outliers from data and identify important factors
 - Got a working model with 79.5% prediction accuracy using original dataset
 
+```{r log_model w/ export dataset}
+#this should be the same as below but code uses exported CSV for data
+#tying to figure out how to get shiny app to use this 
+
+ks_app <- read.csv(file='./clean_kickstarter_data.csv')
+
+logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
+                    family = 'binomial',
+                    data = ks_app)
+
+scatter.smooth(logit.overall.app$fit,
+               residuals(logit.overall, type = "deviance"),
+               lpars = list(col = "red"),
+               xlab = "Fitted Probabilities",
+               ylab = "Deviance Residual Values",
+               main = "Residual Plot for\nLogistic Regression of Admission Data")
+
+exp(logit.overall.app$coefficients)
+
+summary(logit.overall.app)
+
+newdata = with(ks_app, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
+                              sub_category='technology',
+                              goal_usd=3000,
+                              duration=mean(duration),
+                              launch_hour=median(launch_hour),
+                              name_len=mean(name_len)))
+
+
+predict(logit.overall.app, newdata,type='response')
+
+
+#-------
+status.predicted = round(logit.overall.app$fitted.values)
+length(status.predicted)
+length(ks_app$status_binary)
+
+table(truth = ks_app$status_binary, prediction = status.predicted)
+# truth      0      1
+#     0  45694  29534
+#     1  11336 113095
+(45694+113095)/(113095+11336+29534+45694)
+#79.5% accuracy! No time to tune - GOING WITH IT :)))
+
+```
+
+
 ```{r log_model}
 # ---- Second Attempt ----
 #selected variables expected to have highest impact (reducing until model converges)

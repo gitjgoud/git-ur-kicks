@@ -1,3 +1,15 @@
+library(shiny)
+library(shinydashboard)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+
+ks_app <- read.csv(file='./clean_kickstarter_data.csv')
+
+logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
+                        family = 'binomial',
+                        data = ks_app)
+
 ui <- dashboardPage(
   dashboardHeader(title = "Can You Kickstart?"),
   dashboardSidebar(
@@ -11,7 +23,16 @@ ui <- dashboardPage(
       # First tab content
       tabItem(tabName = "dashboard",
               fluidRow(
+                box(plotOutput("plot1",
+                               height = 250)),
+                
                 box(
+                  title = "Controls",
+                  sliderInput("slider",
+                              "Number of observations:",
+                              1, 100, 50)
+                ),
+              box(
                   textInput('name',
                             label="Project Name",
                             value='name your project!'),
@@ -45,6 +66,13 @@ ui <- dashboardPage(
                               max=23,
                               value=12)
                 )
+              ),
+              fluidRow(
+                box(
+                  actionButton('calculate',
+                               label='GO')
+                ),
+                textOutput('percent_success')
               )
       ),
       
@@ -57,15 +85,27 @@ ui <- dashboardPage(
 )
 
 server <- function(input, output) {
-  library(shiny)
-  library(shinydashboard)
-  library(ggplot2)
-  library(tidyverse)
-  library(dplyr)
-  library(shinyTime)
+
+  # user_proj <- data.frame(
+  #   agv_plg.bkr = input$goal_usd/input$backers_count,
+  #   sub_category = input$category,
+  #   goal_usd = input$goal_usd,
+  #   duration = input$duration,
+  #   launch_hour = input$launch_hour,
+  #   name_len = length(input$name)
+  # )
   
-  ks_app <- read.csv(file='./clean_kickstarter_data.csv')
-  
+  output$percent_success <- renderText({
+    newdata = with(ks_app, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
+                                      sub_category='technology',
+                                      goal_usd=input$goal_usd,
+                                      duration=mean(duration),
+                                      launch_hour=median(launch_hour),
+                                      name_len=mean(name_len)))
+    
+    
+    paste(round(predict(logit.overall.app, newdata,type='response'),3)*100,'%')
+  })
   
   set.seed(122)
   histdata <- rnorm(500)
