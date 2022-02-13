@@ -851,7 +851,7 @@ main_cat %>% arrange(pct_succ) %>% top_n(-10)
 
 ```{r Launch Timing}
 
-
+#USE THIS
 ks %>%
   group_by(launch_year) %>%
   summarize(ct_succ=sum(status=='successful'),
@@ -862,12 +862,91 @@ ks %>%
             projects=n()) %>%
   ggplot(aes(x=launch_year,y=pct_succ,size=projects,col=avg_bkr)) +
   geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
   scale_x_continuous(limits=c(2009,2020),breaks=seq(2009,2020)) +
   ylim(c(0,1)) +
   theme(panel.grid.minor=element_blank()) +
-  theme_linedraw()
+  theme_linedraw() +
+  labs(title='Launch Year Tends',x='Year',y='Percent success')
 #interesting drop in 2014 then trending back up
-#roll in new data if time permits
+
+
+#USE THIS
+ks %>%
+  group_by(launch_month) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=launch_month,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(1,12),breaks=seq(1,12)) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Launch Month Tends',x='Month',y='Percent success')
+
+#USE THIS
+ks %>%
+  group_by(launch_dom) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=launch_dom,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(1,31),breaks=seq(1,31)) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Launch Day Tends - Day of Month',x='Day of Month',y='Percent success')
+
+#USE THIS
+ks %>%
+  group_by(launch_dow) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=launch_dow,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(1,7),breaks=seq(1,7)) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Launch Day Tends - Day of Week',x='Day of week',y='Percent success')
+
+#USE THIS
+ks %>%
+  group_by(launch_hour) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=launch_hour,y=pct_succ,size=projects,col=avg_bkr)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(sec.axis = sec_axis(~ .-5,name="Hour (EST)"),
+                     limits=c(0,23),breaks=seq(0,23),) +
+  ylim(c(0,1)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Launch Hour Trends',x='Hour (UTC)',y='Percent success')
+
+?sec_axis
+
+#--- Old Stuff ----
 
 p_lm <- ks %>%
   group_by(launch_month) %>%
@@ -914,80 +993,19 @@ p_lhour <- ks %>%
   ylim(c(0,1)) +
   theme(panel.grid.minor=element_blank())
 
-library(gridExtra)
 grid.arrange(p_lm,p_ldom,p_ldow,p_lhour, nrow=2)
 
-######################################################################################look at statistical significance of these points
-######################################################################################what timezone is this in? UTC, consider converting (in app automatically convert)
-######################################################################################### second axis with local time
 ```
 
 
-```{r Launch Timing}
+```{r Deadline}
 ##############################################################################
 ##
 ## Deadline
 ##
 ##############################################################################
 
-ks %>%
-  group_by(dead_year) %>%
-  summarize(ct_succ=sum(status=='successful'),
-            ct_fail=sum(status=='failed'),
-            pct_succ=ct_succ/n()) %>%
-  ggplot(aes(x=dead_year,y=pct_succ)) +
-  geom_point() +
-  scale_x_continuous(limits=c(2009,2020),breaks=seq(2009,2020)) +
-  ylim(c(0,1)) +
-  theme(panel.grid.minor=element_blank())
-#interesting drop in 2014 then trending back up
-#roll in new data if time permits
 
-p_dm <- ks %>%
-  group_by(dead_month) %>%
-  summarize(ct_succ=sum(status=='successful'),
-            ct_fail=sum(status=='failed'),
-            pct_succ=ct_succ/n()) %>%
-  ggplot(aes(x=dead_month,y=pct_succ)) +
-  geom_point() +
-  scale_x_continuous(limits=c(1,12),breaks=seq(1,12)) +
-  ylim(c(0,1)) +
-  theme(panel.grid.minor=element_blank())
-
-p_ddom <- ks %>%
-  group_by(dead_dom) %>%
-  summarize(ct_succ=sum(status=='successful'),
-            ct_fail=sum(status=='failed'),
-            pct_succ=ct_succ/n()) %>%
-  ggplot(aes(x=dead_dom,y=pct_succ)) +
-  geom_point() +
-  scale_x_continuous(limits=c(1,31),breaks=seq(1,31)) +
-  ylim(c(0,1)) +
-  theme(panel.grid.minor=element_blank())
-
-p_ddow <- ks %>%
-  group_by(dead_dow) %>%
-  summarize(ct_succ=sum(status=='successful'),
-            ct_fail=sum(status=='failed'),
-            pct_succ=ct_succ/n()) %>%
-  ggplot(aes(x=dead_dow,y=pct_succ)) +
-  geom_point() +
-  scale_x_continuous(limits=c(1,7),breaks=seq(1,7)) +
-  ylim(c(0,1)) +
-  theme(panel.grid.minor=element_blank())
-
-p_dhour <- ks %>%
-  group_by(dead_hour) %>%
-  summarize(ct_succ=sum(status=='successful'),
-            ct_fail=sum(status=='failed'),
-            pct_succ=ct_succ/n()) %>%
-  ggplot(aes(x=dead_hour,y=pct_succ)) +
-  geom_point() +
-  scale_x_continuous(limits=c(0,23),breaks=seq(0,23)) +
-  ylim(c(0,1)) +
-  theme(panel.grid.minor=element_blank())
-
-grid.arrange(p_dm,p_ddom,p_ddow,p_dhour, nrow=2)
 ```
 
 
