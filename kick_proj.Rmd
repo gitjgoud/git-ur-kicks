@@ -56,6 +56,8 @@ ks <- ks_b %>%
   mutate(pct_funded=usd_pledged/goal_usd) %>%
   #calculates average pledge amount
   mutate(avg_plg.bkr=ifelse(backers_count > 0,usd_pledged/backers_count,0)) %>%
+  #bins avb_plg.bkr by nearest 10
+  mutate(avg_plg.bkr.bin=round_any(avg_plg.bkr,10)) %>%
   #name counts
   mutate(name_len=str_length(name)) %>%
   mutate(name_wrd=sapply(strsplit(name," "),length)) %>%
@@ -65,6 +67,7 @@ ks <- ks_b %>%
   filter(backers_count<=3997) %>%
   filter(goal_usd<=5e05) %>%
   filter(avg_plg.bkr<=724)
+
 
 summary(ks)
 #no null values in any field
@@ -617,6 +620,7 @@ bkr2 <-ks %>% filter(avg_plg.bkr<250) %>%
   labs(title = 'Average Pledge (USD)', x="", y= "Avg Pledge") +
   theme(legend.position = "none")
 
+#USE THIS
 grid.arrange(bkr1,bkr2,ncol=2)
 
 #--- Scatter/pct_funded and backers ----
@@ -631,7 +635,6 @@ ks %>% filter(status=='successful') %>% count(pct_funded<1)
 # 1          FALSE 118585
 # 2           TRUE   5846
 
-#USE THIS
 bkr3 <- ks %>%
   ggplot(aes(x=log(pct_funded),y=backers_count)) + 
   geom_point(aes(color=status),size=.1) +
@@ -648,7 +651,34 @@ bkr4 <-ks %>%
   labs(title='Average Pledge Near Funding Goal',x='log(Percent Funded)',y='Average Pledge') +
   theme(legend.position = 'none')
 
+#USE THIS
 grid.arrange(bkr3,bkr4,nrow=2)
+
+
+
+# --- plege per backer ----
+
+
+ks %>%
+  transmute(round_any(avg_plg.bkr,10))
+
+#USE THIS
+ks %>%
+  group_by(avg_plg.bkr.bin) %>%
+  summarize(ct_succ=sum(status=='successful'),
+            ct_fail=sum(status=='failed'),
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=avg_plg.bkr.bin,y=pct_succ,size=projects,col=avg_goal)) +
+  geom_point() +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
+  scale_x_continuous(limits=c(0,700),breaks=seq(0,700,by=50)) +
+  theme_linedraw() +
+  theme(panel.grid.minor=element_blank()) +
+  labs(title='Average Pledge Trends',x='Average Pledge (USD)',y='Percent success') +
+  ylim(0,1)
 
 
 ```
@@ -741,11 +771,6 @@ ks %>%
 #                     Max.   :500000  
 
 
-#---------------------------------------------------------------------
-#      pct_funded
-#----------------------------------------------------------------------
-
-  
 #--- Density Plot/pct_funded
 
 #USE THIS
@@ -754,7 +779,7 @@ ks %>% filter(pct_funded<5) %>%
   geom_density(aes(fill=status), alpha = .4) +
   theme_linedraw() +
   labs(x='',y='',title = 'Percent Funded') +
-  theme(axis.text.y=element_blank())
+  theme(axis.text.y=element_blank()) 
 #vast majority of funded projects do not exceed 200% of goal
 #density scale is broken due to not showing full dataset - just hiding
 
@@ -1158,7 +1183,10 @@ This didn't actually work
 
 ```{r log_model}
 # ---- Second Attempt ----
-#selected variables expected to have highest impact
+#selected variables expected to have highest impact (reducing until model converges)
+# Warning message:
+# glm.fit: fitted probabilities numerically 0 or 1 occurred 
+#no error with these variables selected
 
 logit.overall = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
                     family = 'binomial',
@@ -1187,28 +1215,22 @@ newdata = with(ks, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
 predict(logit.overall, newdata,type='response')
 
 
-#--------
+#-------
+status.predicted = round(logit.overall$fitted.values)
+length(status.predicted)
+length(ks$status_binary)
 
-
-
-newdata = with(GradSchools, data.frame(gre = mean(gre),
-                                       gpa = mean(gpa),
-                                       rank = factor(1:4)))
-newdata #Creating a data frame with the average GRE and GPA for each level of
-        #the rank variable.
-
-predict(logit.overall, newdata) #This gives us the log odds; but we want
-                                #the probabilities.
-                                #we know these are log odds because they are negative
-
-#Using the formula to convert to probabilities:
-exp(predict(logit.overall, newdata))/(1 + exp(predict(logit.overall, newdata)))
-#all positive means they could be probabilities if we lacked contect
+table(truth = ks$status_binary, prediction = status.predicted)
+# truth      0      1
+#     0  45694  29534
+#     1  11336 113095
+(45694+113095)/(113095+11336+29534+45694)
+#79.5% accuracy! No time to tune - GOING WITH IT :)))
 
 ```
 
 
-```{r log_model}
+```{r IGNORE log_model}
 summary(ks)
 
 plot(ks)
@@ -1295,7 +1317,7 @@ summary(logit.overall3)
 ```
 
 
-```{r log_model_reduced_goal}
+```{r IGNORE log_model_reduced_goal}
 
 
 ks.r <- ks %>% filter(goal_usd<50000)
