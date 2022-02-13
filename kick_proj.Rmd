@@ -60,11 +60,11 @@ ks <- ks_b %>%
   mutate(name_len=str_length(name)) %>%
   mutate(name_wrd=sapply(strsplit(name," "),length)) %>%
   #binary status field for modeling
-  mutate(status_binary=ifelse(status=='successful',1,0))
-
-###
-### RUN THE OUTLIER FILTER
-###
+  mutate(status_binary=ifelse(status=='successful',1,0)) %>%
+  #outlier filter, see below
+  filter(backers_count<=3997) %>%
+  filter(goal_usd<=5e05) %>%
+  filter(avg_plg.bkr<=724)
 
 summary(ks)
 #no null values in any field
@@ -251,6 +251,7 @@ ks %>% filter(avg_plg.bkr<=724) %>%
 ```{r Outliers filter}
 
 #based on values identified in previous chunk
+#this has been replicated above so I don't forget to run it
 
 ks <- ks %>% 
   filter(backers_count<=3997) %>%
@@ -311,6 +312,7 @@ ks %>%
             succ_rate=sum(status=='successful')/n()) %>%
   ggplot() +
   geom_point(aes(x=name_len,y=succ_rate,size=avg_goal,color=total)) +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
   labs(title='Name Length vs Project Success',x='Characters in Name',y='Success Rate',
        size="Average Goal USD", color="Count") +
   theme_linedraw() +
@@ -765,15 +767,10 @@ ks %>% filter(status=='successful') %>%
 ```
 
 
-```{r cars}
-##############################################################################
-##
-## Categories
-##
-##############################################################################
+```{r Categories}
+# --- broad (sub) categories ------------------------------------
 
 # x = categories, y = goal, success rate
-
 sub_cat <- ks %>% 
   group_by(sub_category) %>%
   summarise(pct_succ=sum(pct_funded>=1)/n(),
@@ -782,89 +779,93 @@ sub_cat <- ks %>%
             avg_plg=mean(avg_plg.bkr))
 sub_cat
 
-#category vs success/goal
+#USE THIS
 sub_cat %>%
   ggplot(aes(x=reorder(sub_category, pct_succ))) +
-  geom_point(aes(y=pct_succ)) +
-  geom_point(aes(y=avg_goal/1e5),shape=1) 
-
-#category vs backer count
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ)))+
-  geom_point(aes(y=avg_bkrs/10))
-#captured by scale 0-600
-#adjust to show in 10s, scale to match avg_goal
-
-#category vs backer count
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ)))+
-  geom_point(aes(y=avg_plg))
-#captured by scale 0-140
-
-#category vs goal
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ)))+
-  geom_point(aes(y=avg_goal/1000))
-#high of 100k - change to plot in thousands, captured by scale 0-100
-
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ))) +
-  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Goal in Thousands USD")) +
-  geom_point(aes(y=pct_succ)) +
-  geom_point(aes(y=avg_goal/100000),col='green4',shape=1)
-
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ))) +
-  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Average Pledge")) +
-  geom_point(aes(y=pct_succ)) +
-  geom_point(aes(y=avg_plg/100),col='green4',shape=1)
+  geom_point(aes(y=pct_succ,size=avg_bkrs,col=avg_goal)) +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  theme_linedraw() +
+  scale_color_gradient(low='grey',high='firebrick4') +
+  labs(x='',y='Percent Successful',title='Broad Category (aka SubCategory) Success') +
+  theme(axis.text.x = element_text(angle=45,vjust=.65))
 
 
 
-#redo - plot % success vs goal, color dots by category, scale size by number of projects ####################################################!!!!!!!
 
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ))) +
-  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Average Backer Count")) +
-  geom_point(aes(y=pct_succ)) +
-  geom_point(aes(y=avg_bkrs/100),col='green4',shape=1)
+#--- by main category  ------------------------------------
 
-
-sub_cat %>%
-  ggplot(aes(x=reorder(sub_category, pct_succ))) +
-  scale_y_continuous(name='% Success', limits=c(0,1), sec.axis = sec_axis(~ 100*., name="Counts")) +
-  geom_point(aes(y=pct_succ)) +
-  geom_point(aes(y=avg_goal/100000),col='green4',shape=1) +  #circles
-  geom_point(aes(y=avg_bkrs/100),col='green4',shape=2) +     #triangles
-  geom_point(aes(y=avg_plg/100),col='green4',shape=3)        #plus
-#this plot loses tech stuff
-
-#--- by main category
-
-
-ks %>% 
+main_cat <- ks %>% 
   group_by(main_category) %>%
-  summarise(pct_succ=sum(pct_funded>=1)/n())
+  summarise(pct_succ=sum(pct_funded>=1)/n(),
+            avg_goal=mean(goal_usd),
+            avg_bkrs=mean(backers_count),
+            avg_plg=mean(avg_plg.bkr))
 
 
-?sec_axis
+main_cat
 
-##############################################################################
-##
-## Launch Timing
-##
-##############################################################################
+#USE THIS
+main_cat %>%
+  ggplot(aes(x=reorder(main_category, pct_succ))) +
+  geom_point(aes(y=pct_succ,size=avg_bkrs,col=avg_goal)) +
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  theme_linedraw() +
+  scale_color_gradient(low='grey',high='firebrick4') +
+  labs(x='',y='Percent Success',title='Broad Category (aka SubCategory) Success') +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major.x = element_blank())
+
+#USE THIS
+main_cat %>% arrange(desc(pct_succ)) %>% top_n(10)
+#    main_category    pct_succ avg_goal avg_bkrs avg_plg
+#    <chr>               <dbl>    <dbl>    <dbl>   <dbl>
+#  1 Product Design      0.957    9960.     437.    128.
+#  2 Technology          0.945   12154.     435.    155.
+#  3 Narrative Film      0.924   13475.     126.    118.
+#  4 Documentary         0.901   18278.     207.    123.
+#  5 Hardware            0.662   37553.     390.    153.
+#  6 Camera Equipment    0.566   32510.     339.    185.
+#  7 Sound               0.527   33418.     252.    166.
+#  8 Robots              0.475   33931.     186.    142.
+#  9 3D Printing         0.449   30139.     208.    147.
+# 10 Wearables           0.431   39993.     273.    120.
+main_cat %>% arrange(pct_succ) %>% top_n(-10)
+#    main_category pct_succ avg_goal avg_bkrs avg_plg
+#    <chr>            <dbl>    <dbl>    <dbl>   <dbl>
+#  1 Candles          0.157    5534.    14.6     26.9
+#  2 DIY              0.188   10100.    18.2     32.7
+#  3 Bacon            0.229   18423.    37.1     28.2
+#  4 Crochet          0.246    2454.     9.37    22.3
+#  5 Printing         0.261    6811.    26.3     29.6
+#  6 Embroidery       0.268    4675.    29.5     35.2
+#  7 Hip-Hop          0.298   11394.    28.2     32.4
+#  8 Poetry           0.413    4866.    31.2     33.8
+#  9 Stationery       0.420    5568.    54.7     33.0
+# 10 Digital Art      0.429    5848.    39.2     35.6
+
+
+
+```
+
+
+```{r Launch Timing}
+
 
 ks %>%
   group_by(launch_year) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
-            pct_succ=ct_succ/n()) %>%
-  ggplot(aes(x=launch_year,y=pct_succ)) +
+            pct_succ=ct_succ/n(),
+            avg_bkr=mean(backers_count),
+            avg_goal=mean(goal_usd),
+            projects=n()) %>%
+  ggplot(aes(x=launch_year,y=pct_succ,size=projects,col=avg_bkr)) +
   geom_point() +
   scale_x_continuous(limits=c(2009,2020),breaks=seq(2009,2020)) +
   ylim(c(0,1)) +
-  theme(panel.grid.minor=element_blank())
+  theme(panel.grid.minor=element_blank()) +
+  theme_linedraw()
 #interesting drop in 2014 then trending back up
 #roll in new data if time permits
 
@@ -919,7 +920,10 @@ grid.arrange(p_lm,p_ldom,p_ldow,p_lhour, nrow=2)
 ######################################################################################look at statistical significance of these points
 ######################################################################################what timezone is this in? UTC, consider converting (in app automatically convert)
 ######################################################################################### second axis with local time
+```
 
+
+```{r Launch Timing}
 ##############################################################################
 ##
 ## Deadline
@@ -984,8 +988,10 @@ p_dhour <- ks %>%
   theme(panel.grid.minor=element_blank())
 
 grid.arrange(p_dm,p_ddom,p_ddow,p_dhour, nrow=2)
+```
 
 
+```{r Launch Timing}
 ##############################################################################
 ##
 ## Duration
@@ -1010,11 +1016,10 @@ ks %>%
 ks %>%
   ggplot() +
   geom_boxplot(aes(y=duration,x=status))
+```
 
 
-
-
-
+```{r Launch Timing}
 ##############################################################################
 ##
 ## Creator Experience
@@ -1061,43 +1066,9 @@ creator3 %>%
 # this is kinda interesting
 #should be 0 to 1
 # plot 1 proj vs more than one
-
-##############################################################################
-##
-## Project Name and Blurb Characteristics
-##
-##############################################################################
-
-#boxplots
-?stringr
-
-ks$name[1] %>% str_length()
-#name lenght
-#num words
-#stringr count strings
-```
-
-# name and blurb
-
-
-
 ```
 
 ## Build a model
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ```{r log_model}
 summary(ks)
