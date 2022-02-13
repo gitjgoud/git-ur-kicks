@@ -6,9 +6,18 @@ library(dplyr)
 
 ks_app <- read.csv(file='./clean_kickstarter_data.csv')
 
+
 logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
                         family = 'binomial',
                         data = ks_app)
+
+
+user_proj = with(ks_app, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
+                                  sub_category='technology',
+                                  goal_usd=3000,
+                                  duration=mean(duration),
+                                  launch_hour=median(launch_hour),
+                                  name_len=mean(name_len)))
 
 ui <- dashboardPage(
   dashboardHeader(title = "Can You Kickstart?"),
@@ -54,9 +63,9 @@ ui <- dashboardPage(
                   numericInput("goal_usd",
                                label = "Funding Goal [USD]",
                                value = 1000),
-                  numericInput("backers_count",
-                               label = "Estimated Backers",
-                               value = 500),
+                  numericInput("est_pledge",
+                               label = "Estimated Pledge",
+                               value = 20),
                   dateInput('launch_date',
                             label = 'Launch Date',
                             value='2022-04-01'),
@@ -84,27 +93,30 @@ ui <- dashboardPage(
   )
 )
 
-server <- function(input, output) {
+server <- function(input, output,session) {
 
-  # user_proj <- data.frame(
-  #   agv_plg.bkr = input$goal_usd/input$backers_count,
-  #   sub_category = input$category,
-  #   goal_usd = input$goal_usd,
-  #   duration = input$duration,
-  #   launch_hour = input$launch_hour,
-  #   name_len = length(input$name)
-  # )
+  
+  observe({
+    user_proj <- data.frame(
+      agv_plg.bkr = input$est_pledge,
+      sub_category = input$category,
+      goal_usd = input$goal_usd,
+      duration = input$duration,
+      launch_hour = input$launch_hour,
+      name_len = length(input$name)
+    )
+  })
   
   output$percent_success <- renderText({
-    newdata = with(ks_app, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
-                                      sub_category='technology',
-                                      goal_usd=input$goal_usd,
-                                      duration=mean(duration),
-                                      launch_hour=median(launch_hour),
-                                      name_len=mean(name_len)))
+    # newdata = data.frame(avg_plg.bkr=input$est_pledge,
+    #                      sub_category=input$category,
+    #                      goal_usd=input$goal_usd,
+    #                      duration=input$duration,
+    #                      launch_hour=input$launch_hour,
+    #                      name_len=length(input$name)
+    #                      )
     
-    
-    paste(round(predict(logit.overall.app, newdata,type='response'),3)*100,'%')
+    paste(round(predict(logit.overall.app, user_proj,type='response'),3)*100,'%')
   })
   
   set.seed(122)
