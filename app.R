@@ -11,7 +11,7 @@ logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + 
                         family = 'binomial',
                         data = ks_app)
 
-
+#load with initial values
 user_proj = with(ks_app, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
                                   sub_category='technology',
                                   goal_usd=3000,
@@ -32,15 +32,6 @@ ui <- dashboardPage(
       # First tab content
       tabItem(tabName = "dashboard",
               fluidRow(
-                box(plotOutput("plot1",
-                               height = 250)),
-                
-                box(
-                  title = "Controls",
-                  sliderInput("slider",
-                              "Number of observations:",
-                              1, 100, 50)
-                ),
               box(
                   textInput('name',
                             label="Project Name",
@@ -79,9 +70,12 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   actionButton('calculate',
-                               label='GO')
+                               label='Predict')
                 ),
                 textOutput('percent_success')
+              ),
+              fluidRow(
+                
               )
       ),
       
@@ -96,27 +90,36 @@ ui <- dashboardPage(
 server <- function(input, output,session) {
 
   
-  observe({
+  # observe({
+  #   user_proj <- data.frame(
+  #     agv_plg.bkr = input$est_pledge,
+  #     sub_category = input$category,
+  #     goal_usd = input$goal_usd,
+  #     duration = input$duration,
+  #     launch_hour = input$launch_hour,
+  #     name_len = length(input$name)
+  #   )
+  # })
+  # 
+  
+  observeEvent(input$calculate, {
     user_proj <- data.frame(
-      agv_plg.bkr = input$est_pledge,
+      avg_plg.bkr = input$est_pledge,
       sub_category = input$category,
       goal_usd = input$goal_usd,
       duration = input$duration,
       launch_hour = input$launch_hour,
       name_len = length(input$name)
     )
+    
+    output$percent_success <- renderText({
+      paste(round(predict(logit.overall.app, user_proj,type='response'),3)*100,'%')
+    })
+    
   })
   
   output$percent_success <- renderText({
-    # newdata = data.frame(avg_plg.bkr=input$est_pledge,
-    #                      sub_category=input$category,
-    #                      goal_usd=input$goal_usd,
-    #                      duration=input$duration,
-    #                      launch_hour=input$launch_hour,
-    #                      name_len=length(input$name)
-    #                      )
-    
-    paste(round(predict(logit.overall.app, user_proj,type='response'),3)*100,'%')
+    '<-- Click Predict to see chance of success!'
   })
   
   set.seed(122)
