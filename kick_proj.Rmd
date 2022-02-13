@@ -11,7 +11,7 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Data Prep & Review
+## Data Prep & Review ##############################################################################################################
 
 ```{r Load Libraries}
 library(tidyverse)
@@ -62,12 +62,16 @@ ks <- ks_b %>%
   #binary status field for modeling
   mutate(status_binary=ifelse(status=='successful',1,0))
 
+###
+### RUN THE OUTLIER FILTER
+###
+
 summary(ks)
 #no null values in any field
 
 ```
 
-## Evaluate For Outliers
+## Evaluate For Outliers ########################################################################################
 Try to determine if outliers exist for numerical fields
 
 Reviewed several sources for outlier detection in data, few were useful
@@ -80,12 +84,8 @@ Reviewed several sources for outlier detection in data, few were useful
 
 ```{r outliers}
 summary(ks)
-temp %>%                  # Summary by gender purrr
-  split(.$Gender) %>%
-  map(summary)
 
-
-#--- backers_count ----
+#--- backers_count -------------------------------------------------------------------
 summary(ks$backers_count)
 # Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
 #  0.0      5.0     32.0    167.7    102.0 105857.0 
@@ -134,27 +134,27 @@ ks %>% filter(backers_count<=102*3) %>% count()
 # too complicated - try slicing off top .05%
 # note - the actual filter will remove based on a value, not percentage, to prevent cascading effects of slicing percent for each variable
 
-ks %>% slice_min(backers_count,prop = .995) %>% min()
-  
-ks %>%
+ks %>% slice_min(backers_count,prop = .995) %>% summarize(max(backers_count)) #3997
+ks %>% filter(backers_count<=3997) %>%
   ggplot(aes(x=backers_count)) +
   geom_histogram(aes(fill=status),alpha=.7,position=position_dodge(20))
 #looks much more reasonable
 
-ks %>% slice_min(backers_count,prop = .995) %>%
+ks %>% filter(backers_count<=3997) %>%
   ggplot(aes(y=backers_count,x=status)) +
   geom_boxplot(aes(fill=status))
 
 
-#--- usd_pledged ----
+#--- usd_pledged -------------------------------------------------------------------
 
 # the point of this analysis is to determine what factors influence success
 # usd_pledged on it's own fails to help answer this question directly in a meaningful way
 # it either exceeds goal_usd (success) or does not (failure) or provide deep insights
 # into why a project failed besides 'didn't get enough money'
 
+#expecting this will be captured when looking at outliers fore pledge/bkr and pct_funded
 
-#--- goal_usd ----
+#--- goal_usd -------------------------------------------------------------------
 
 summary(ks$goal_usd)
 
@@ -172,16 +172,16 @@ ks %>% filter(goal_usd<=12000*3) %>% count()
 184518/202567 #removes ~9% of data, too much to be considered outliers
 
 #shave off top 0.05%
-
-ks %>% slice_min(goal_usd,prop = .995) %>%
+ks %>% slice_min(goal_usd,prop = .995) %>% summarize(max(goal_usd)) #5e05
+ks %>% filter(goal_usd<=5e05) %>%
   ggplot(aes(x=goal_usd)) +
   geom_histogram(aes(fill=status),alpha=.7,position=position_dodge(20))
 
-ks %>% slice_min(goal_usd,prop = .995) %>%
+ks %>% filter(goal_usd<=5e05) %>%
   ggplot(aes(y=goal_usd,x=status)) +
   geom_boxplot(aes(fill=status))
 
-#--- duration ----
+#--- duration -------------------------------------------------------------------
 
 ks %>%
   ggplot(aes(x=duration)) +
@@ -196,7 +196,31 @@ ks %>% count()
 ks %>% filter(duration<=35*3) %>% count()
 202567/202567 #removes no data, filter not applied
 
-#--- avg_plg.bkr ----
+#--- pct_funded -------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+#Revisit?
+
+
+
+
+
+
+
+
+
+
+
+#--- avg_plg.bkr -------------------------------------------------------------------
 
 ks %>%
   ggplot(aes(x=avg_plg.bkr)) +
@@ -212,32 +236,33 @@ ks %>% filter(avg_plg.bkr<=86.19*3) %>% count()
 194954/202567 #removes ~4% of data, too much
 
 #shave off top 0.05%
+ks %>% slice_min(avg_plg.bkr,prop = .995) %>% summarize(max(avg_plg.bkr)) #723.603
 
-ks %>% slice_min(avg_plg.bkr,prop = .995) %>%
+ks %>% filter(avg_plg.bkr<=724) %>%
   ggplot(aes(x=avg_plg.bkr)) +
   geom_histogram(aes(fill=status),alpha=.7,position=position_dodge(20))
 
-ks %>% slice_min(avg_plg.bkr,prop = .995) %>%
+ks %>% filter(avg_plg.bkr<=724) %>%
   ggplot(aes(y=avg_plg.bkr,x=status)) +
   geom_boxplot(aes(fill=status))
-
-#revisit after applying other slices, as this may
 
 ```
 
 ```{r Outliers filter}
 
-ks %>% 
-  slice_min(backers_count,prop = .995) %>%
-  slice_min(goal_usd,prop = .995) %>%
-  slice_min(avg_plg.bkr,prop = .995) %>%
+#based on values identified in previous chunk
+
+ks <- ks %>% 
+  filter(backers_count<=3997) %>%
+  filter(goal_usd<=5e05) %>%
+  filter(avg_plg.bkr<=724)
   
 
 
 ```
 
 
-## EDA
+## EDA #######################################################################################################################
 
 
 ```{r name}
@@ -317,7 +342,6 @@ ks %>%
   #same as above, count seems more important that backer count
 
 
-#USE THIS
 ks %>%
   group_by(name_wrd) %>%
   summarize(total=n(),
@@ -340,6 +364,7 @@ ks %>%
   geom_point(aes(color=status),size=1)
 
 
+#USE THIS
 ks %>%
   ggplot(aes(x=name_len/name_wrd)) + 
   geom_density(aes(fill=status),alpha=.4) +
@@ -351,7 +376,7 @@ ks %>% group_by(status) %>% summarize(mean(name_len/name_wrd))
 #  status     `mean(name_len/name_wrd)`
 #   <chr>                          <dbl>
 # 1 failed                          6.48
-# 2 successful                      6.21
+# 2 successful                      6.20
 ##
 #average name length for projects is 6.3
 
@@ -391,6 +416,7 @@ cur.cnt <- ks %>%
   inner_join(unq_ctry,by='country') %>% 
   inner_join(unq_curr,by='currency')
 
+#USE THIS
 cor(cur.cnt$country_code,cur.cnt$currency_code)
 # 0.927% correlation - going to drop currency from analysis
 
@@ -413,6 +439,7 @@ country
 mean(country$succ_rate)
 sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed'))
 
+#USE THIS
 #suspect we're seeing effect of outliers because country is not a strong factor itself
 country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=succ_rate))+
@@ -469,8 +496,6 @@ count2 <-country %>%
        size="Succ Rate", color="Average Goal") 
 #plot highlights the high success rates are probably outliers
 
-
-
 count3 <-country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=avg_plg)) +
   geom_hline(yintercept = mean(ks$avg_plg.bkr))+
@@ -496,7 +521,7 @@ country %>%
   labs(title='Country vs Average Backer Count',x='',y='Average Num Backers',
        size="Succ Rate", color="Average Goal") 
 
-
+#USE THIS
 grid.arrange(count1,count2,count3,count4,nrow=2)
 #the point is not to break down every facet of country, but show it is likely a confounding factor
 #compare us to non-US
@@ -517,6 +542,7 @@ ks %>%
 # 1 Foriegn  63662     0.608   37545.     152.    73.0
 # 2 US      138905     0.630   36650.     175.    76.2
 
+#USE THIS
 foreign <- ks %>% 
   mutate(foriegn=ifelse(country=='US','US','Foriegn')) %>% 
   group_by(status,foriegn) %>%
@@ -541,20 +567,18 @@ foreign <- ks %>%
 ## backers_count -------------------------------------------------------------
 # some projects have no backers - eliminate? [decided not to but will report in backer stats]
 ks %>% count(backers_count==0)  
-#   backers_count == 0      n
-# 1              FALSE 189684
-# 2               TRUE  13163
-13163/(13163+189684) #~6.5% of projects have no backers
+#  backers_count == 0      n
+# 1              FALSE 186725
+# 2               TRUE  12934
+12934/(12934+186725) #~6.5% of projects have no backers
 
 ks %>% group_by(status) %>% count(backers_count==0)  
 #   status     `backers_count == 0`      n
 #   <chr>      <lgl>                 <int>
-# 1 failed     FALSE                 63281
-# 2 failed     TRUE                  13163
-# 3 successful FALSE                126403
-13163/(13163+63281) #17% of failed projects have no backers
-# huge difference between IQR and max value
-# investigate
+# 1 failed     FALSE                 62294
+# 2 failed     TRUE                  12934
+# 3 successful FALSE                124431
+12934/(62294+12934) #~17% of failed projects have no backers
 
 
 #--- Pledge per backer stats ----
@@ -562,15 +586,16 @@ ks %>% group_by(status) %>% count(backers_count==0)
 ks %>% group_by(status) %>% summarise(mean(avg_plg.bkr))
 #   status     `mean(avg_plg.bkr)`
 #   <chr>                    <dbl>
-# 1 failed                    47.1
-# 2 successful                92.2
+# 1 failed                    40.9
+# 2 successful                85.3
 ks %>% filter(backers_count>0) %>% group_by(status) %>% summarise(mean(avg_plg.bkr))
 #   status     `mean(avg_plg.bkr)`
 #   <chr>                    <dbl>
-# 1 failed                    56.9
-# 2 successful                92.2
+# 1 failed                    49.3
+# 2 successful                85.3
 ##
 #excluding backers brings average pledge per backer up by ~25%
+
 
 #--- visualizing number of backers vs status
 
@@ -599,22 +624,27 @@ grid.arrange(bkr1,bkr2,ncol=2)
 #tendency to make low pledge to follow a project, recieve updates and adjust in last 24 of campaign
 #interesting that pledge per backer is HIGHER for projects near 100% funding
 
+ks %>% filter(status=='successful') %>% count(pct_funded<1)
+#   pct_funded < 1      n
+# 1          FALSE 118585
+# 2           TRUE   5846
 
+#USE THIS
 bkr3 <- ks %>%
   ggplot(aes(x=log(pct_funded),y=backers_count)) + 
-  geom_point(aes(color=status),size=.01) +
-  ylim(0,25000) +
+  geom_point(aes(color=status),size=.1) +
   xlim(-10,10) +
   theme_linedraw() +
-  labs(title='Backer Count Near Funding Goal',x='log(Percent Funded)',y='Backer Count')
+  labs(title='Backer Count Near Funding Goal',x='log(Percent Funded)',y='Backer Count')+
+  theme(legend.position = 'none')
 
 bkr4 <-ks %>%
   ggplot(aes(x=log(pct_funded),y=(avg_plg.bkr))) + 
-  geom_point(aes(color=status),size=.01) +
-  ylim(0,5000) +
+  geom_point(aes(color=status),size=.1) +
   xlim(-10,10) +
   theme_linedraw() +
-  labs(title='Average Pledge Near Funding Goal',x='log(Percent Funded)',y='Average Pledge')
+  labs(title='Average Pledge Near Funding Goal',x='log(Percent Funded)',y='Average Pledge') +
+  theme(legend.position = 'none')
 
 grid.arrange(bkr3,bkr4,nrow=2)
 
