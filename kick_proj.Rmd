@@ -656,72 +656,44 @@ grid.arrange(bkr3,bkr4,nrow=2)
 
 summary(ks$goal_usd)
 
-#--- min goals (~$1) ----
-
-# noticed in graphical analysis there were projects with goal <=1, should I remove?
-# check country/currency first
-ks_b %>% filter(goal_usd<=1) %>% group_by(country) %>%summarize(n())  #274 US, 25 other
-ks_b %>% filter(goal_usd<=1) %>% group_by(currency) %>%summarize(n()) #274 US, 25 other
-#removal seems OK
-25/300
-
-#--- max goals (>$2mil) ---
-
-ks %>% group_by(status) %>% summarize(max(goal_usd),total_projs=n(),'goal_2m' = sum(goal_usd>=2e6),'pct_2m'=goal_2m/total_projs)
-#   status     `max(goal_usd)` total_projs goal_2m    pct_2m
-#   <chr>                <dbl>       <int>   <int>     <dbl>
-# 1 failed           135403380       76444     295 0.00386  
-# 2 successful         2000000      126403       4 0.0000316
-####
-# there were 251 unsuccessful proj >2m (44 failed at 2m)
-
-
-
-
-##############################################################################
-##
-## Funding Goal & % Pledged
-##
-##############################################################################
-
-
-summary(ks$goal_usd)
-#      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-#         0      1400      4716     36880     12000 135403380
-
-ks %>% group_by(status) %>% summarize(mean(goal_usd),max(goal_usd),median(goal_usd))
-#   status     `mean(goal_usd)` `max(goal_usd)` `median(goal_usd)`
-#   <chr>                 <dbl>           <dbl>              <dbl>
-# 1 failed               83216.       135403380               6800
-# 2 successful            8858.         2000000               3500
-
-ks %>%
-  ggplot(aes(x=goal_usd)) +
-  geom_histogram(aes(fill=status,line='black'), bins=10, position='dodge')
-# not useful
-
-
-#---------------------------------------------------------------------
-#      goal_usd
-#----------------------------------------------------------------------
-
-#--- Density Plots/goal_usd ----
+#--- goal_usd --------------------------------------------------------------
 
 #filter for 200k (max for successful)
-ks %>% filter(goal_usd<2e5) %>%
+goal1 <- ks %>%
   ggplot(aes(x=goal_usd)) +
-  geom_density(aes(fill=status), alpha = .4)
-# better - confirms cheaper projects much more likely to be succesful
+  geom_density(aes(fill=status), alpha = .4) +
+  theme_linedraw() +
+  geom_vline(xintercept = 3400,color='steelblue4',size=.5) +
+  geom_vline(xintercept = 8010,color='steelblue4',size=.5,linetype=2) +
+  geom_vline(xintercept = 6733,color='brown4',size=.5) +
+  geom_vline(xintercept = 23383,color='brown4',size=.5,linetype=2) +
+  labs(y="",x='',title='Project Funding Goal (USD)') +
+  theme(legend.position = c(.9,.75),
+        legend.box.background = element_rect(color='black',size=1))
 
-ks %>% filter(goal_usd<1e5) %>%
+goal2 <- ks %>% filter(goal_usd<1e5) %>%
   ggplot(aes(x=goal_usd)) +
-  geom_density(aes(fill=status), alpha = .4)
+  geom_density(aes(fill=status), alpha = .4) +
+  geom_vline(xintercept = 3400,color='steelblue4',size=1) +
+  geom_vline(xintercept = 8010,color='steelblue4',size=1,linetype=2) +
+  geom_vline(xintercept = 6733,color='brown4',size=1) +
+  geom_vline(xintercept = 23383,color='brown4',size=1,linetype=2) +
+  theme_linedraw() +
+  labs(y="",x='') +
+  theme(legend.position = 'none')
 
-#filter for values close to mean of successful projects
-ks %>% filter(goal_usd<1e4) %>%
+goal3 <- ks %>% filter(goal_usd<1e4) %>%
   ggplot(aes(x=goal_usd)) +
-  geom_density(aes(fill=status), alpha = .4)
+  geom_density(aes(fill=status), alpha = .4)+
+  geom_vline(xintercept = 3400,color='steelblue4',size=1) +
+  geom_vline(xintercept = 8010,color='steelblue4',size=1,linetype=2) +
+  geom_vline(xintercept = 6733,color='brown4',size=1) +
+  theme_linedraw() +
+  labs(y="",x='Funding Goal') +
+  theme(legend.position = 'none')
 
+#USE THIS
+grid.arrange(goal1,goal2,goal3,nrow=3)
 
 #--- Box Plots/goal_usd
 
@@ -730,23 +702,42 @@ ks %>%
   geom_violin(aes(fill=status)) +
   geom_boxplot(alpha=.5)
 #long tail of unsuccessful projects masks
+#plot on log scale instead
 
-
+#USE THIS
 ks %>%
   ggplot(aes(x=fct_reorder(status,goal_usd),y=log(goal_usd))) +
   geom_violin(aes(fill=status)) +
-  geom_boxplot(alpha=.5)
+  geom_boxplot(alpha=.5) +
+  theme_linedraw() +
+  labs(x='',y='log(Prohect Funding Goal (USD))',title = 'Funding Goal')
 # Overlap between IQRs, medians are veyr close (on log scale)
 # success has low tail, failed has high
 
-ks %>% filter(goal_usd<=2e5) %>%
-  ggplot(aes(x=fct_reorder(status,goal_usd),y=goal_usd)) +
-  geom_violin(aes(fill=status)) #+
-  geom_boxplot(alpha=.5)
-#ugly (hide box?) but demonstrates point- cheap projects are easier to make successful
-#primary analaysis - acknowledge that cheap projects will succeed
-#seconday analysis - consider what makes more expensive projects successful
-#(look at things like google search trends)
+#USE THIS
+ks %>%
+  select(status,goal_usd) %>%
+  split(.$status) %>%
+  map(summary)
++   map(summary)
+# $failed
+#     status             goal_usd       
+#  Length:75228       Min.   :     1.2  
+#  Class :character   1st Qu.:  2300.0  
+#  Mode  :character   Median :  6733.4  
+#                     Mean   : 23383.9  
+#                     3rd Qu.: 20000.0  
+#                     Max.   :500000.0  
+# 
+# $successful
+#     status             goal_usd     
+#  Length:124431      Min.   :     1  
+#  Class :character   1st Qu.:  1000  
+#  Mode  :character   Median :  3400  
+#                     Mean   :  8010  
+#                     3rd Qu.:  9076  
+#                     Max.   :500000  
+
 
 #---------------------------------------------------------------------
 #      pct_funded
@@ -755,59 +746,21 @@ ks %>% filter(goal_usd<=2e5) %>%
   
 #--- Density Plot/pct_funded
 
-ks %>% filter(goal_usd<1e5,pct_funded<5) %>%
-  ggplot(aes(x=pct_funded)) +
-  geom_density(aes(fill=status), alpha = .4)
+#USE THIS
+ks %>% filter(pct_funded<5) %>%
+  ggplot(aes(x=pct_funded*100)) +
+  geom_density(aes(fill=status), alpha = .4) +
+  theme_linedraw() +
+  labs(x='',y='',title = 'Percent Funded') +
+  theme(axis.text.y=element_blank())
 #vast majority of funded projects do not exceed 200% of goal
+#density scale is broken due to not showing full dataset - just hiding
 
 #--- Histogram/pct_funded
 
 ks %>% filter(status=='successful') %>%
   ggplot(aes(x=log(pct_funded))) + 
   geom_histogram(aes(),col='white') 
-
-#---------------------------------------------------------------------
-#      goal_usd x pct_funded
-#----------------------------------------------------------------------
-
-
-#--- Scatter Plot/pct_funded*goal_usd ---
-
-ks %>%
-  ggplot(aes(x=goal_usd,y=pct_funded)) + 
-  geom_point(aes(color=status))
-
-ks %>%
-  ggplot(aes(x=log(goal_usd),y=log(pct_funded))) + 
-  geom_point(aes(color=status),size=.01)
-#would this be reason to omit projects with no funding from the analysis?
-#what is a better way to interpret this?
-
-
-ks %>% group_by(status) %>% summarize(sum(pct_funded<.1),sum(pct_funded<.01),sum(pct_funded<.001),sum(pct_funded<.0001))
-#   status     `sum(pct_funded < 0.1)` `sum(pct_funded < 0.01)` `sum(pct_funded < 0.001)` `sum(pct_funded < 1e-04)`
-#   <chr>                        <int>                    <int>                     <int>                     <int>
-# 1 failed                       58359                    38026                     24742                     16997
-# 2 successful                       0                        0                         0                         0
-
-ks %>%
-  split(.$status) %>%
-  map(summary)
-```
-
-
-```{r cars}
-##############################################################################
-##
-## Status
-##
-##############################################################################
-
-ks %>% 
-  group_by(status) %>% 
-  summarise(total=n()) %>%
-  ggplot(aes(x="",y=total,fill=status)) + 
-  geom_bar(stat='identity',width=1,color='white')
 
 ```
 
