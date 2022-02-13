@@ -77,7 +77,11 @@ ui <- dashboardPage(
               ),
               fluidRow(
                 box(width=12,
-                  #this may not need a box
+                    collapsible = T,
+                    solidHeader = T,
+                    title = "Project Parameters",
+                    status="warning",
+                    collapsed = T,
                   DT::dataTableOutput('project_params')
                 )
               )
@@ -101,7 +105,7 @@ server <- function(input, output,session) {
       goal_usd = input$goal_usd,
       duration = input$duration,
       launch_hour = input$launch_hour,
-      name_len = length(input$name)
+      name_len = str_length(input$name)
     )
     
     output$percent_success <- renderText({
@@ -110,6 +114,7 @@ server <- function(input, output,session) {
     
     output$project_params <- DT::renderDataTable(
       user_proj,
+      rownames=FALSE,
       options=list(dom='t')
     )
     
@@ -121,6 +126,7 @@ server <- function(input, output,session) {
   
   output$project_params <- DT::renderDataTable(
     user_proj,
+    rownames=FALSE,
     options=list(dom='t')
   )
   
