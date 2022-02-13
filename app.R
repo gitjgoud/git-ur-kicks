@@ -1,5 +1,3 @@
-library(shinydashboard)
-
 ui <- dashboardPage(
   dashboardHeader(title = "Basic dashboard"),
   dashboardSidebar(
@@ -13,22 +11,13 @@ ui <- dashboardPage(
       # First tab content
       tabItem(tabName = "dashboard",
               fluidRow(
-                box(plotOutput("plot1", height = 250)),
-
                 box(
-                  title = "Controls",
-                  sliderInput("slider", "Number of observations:", 1, 100, 50)
-                )
-              ),
-              # add title bar eventually
-              # fluidRow(
-              #   box(title='Plan your project!',solidHeader = T,status = 'primary')
-              # ),
-              fluidRow(
-                box(
-                  textInput('project name',
+                  textInput('name',
                             label="Project Name",
-                            value='Enter text...'),
+                            value='name your project!'),
+                  textInput('blurb',
+                            label="Project Blurb",
+                            value="what's it about?"),
                   selectizeInput("category",
                                  label='Project Category',
                                  choices=unique(ks_app[,"sub_category"])
@@ -38,6 +27,7 @@ ui <- dashboardPage(
                               min=0,
                               max=90,
                               value=30)
+                  #add BS factor
                   ),
                 box(
                   numericInput("goal_usd",
@@ -46,7 +36,14 @@ ui <- dashboardPage(
                   numericInput("backers_count",
                                label = "Estimated Backers",
                                value = 500),
-                  
+                  dateInput('launch_date',
+                            label = 'Launch Date',
+                            value='2022-04-01'),
+                  sliderInput('launch_hour',
+                              label = 'Launch Hour [UTC]',
+                              min=0,
+                              max=23,
+                              value=12)
                 )
               )
       ),
@@ -65,6 +62,7 @@ server <- function(input, output) {
   library(ggplot2)
   library(tidyverse)
   library(dplyr)
+  library(shinyTime)
   
   ks_app <- read.csv(file='./clean_kickstarter_data.csv')
   
