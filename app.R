@@ -3,6 +3,7 @@ library(shinydashboard)
 library(ggplot2)
 library(tidyverse)
 library(dplyr)
+library(DT)
 
 ks_app <- read.csv(file='./clean_kickstarter_data.csv')
 
@@ -75,7 +76,10 @@ ui <- dashboardPage(
                 textOutput('percent_success')
               ),
               fluidRow(
-                
+                box(width=12,
+                  #this may not need a box
+                  DT::dataTableOutput('project_params')
+                )
               )
       ),
       
@@ -89,18 +93,6 @@ ui <- dashboardPage(
 
 server <- function(input, output,session) {
 
-  
-  # observe({
-  #   user_proj <- data.frame(
-  #     agv_plg.bkr = input$est_pledge,
-  #     sub_category = input$category,
-  #     goal_usd = input$goal_usd,
-  #     duration = input$duration,
-  #     launch_hour = input$launch_hour,
-  #     name_len = length(input$name)
-  #   )
-  # })
-  # 
   
   observeEvent(input$calculate, {
     user_proj <- data.frame(
@@ -116,19 +108,25 @@ server <- function(input, output,session) {
       paste(round(predict(logit.overall.app, user_proj,type='response'),3)*100,'%')
     })
     
+    output$project_params <- DT::renderDataTable(
+      user_proj,
+      options=list(dom='t')
+    )
+    
   })
   
   output$percent_success <- renderText({
     '<-- Click Predict to see chance of success!'
   })
   
-  set.seed(122)
-  histdata <- rnorm(500)
+  output$project_params <- DT::renderDataTable(
+    user_proj,
+    options=list(dom='t')
+  )
   
-  output$plot1 <- renderPlot({
-    data <- histdata[seq_len(input$slider)]
-    hist(data)
-  })
+  
+  
 }
+
 
 shinyApp(ui, server)
