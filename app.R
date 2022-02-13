@@ -20,13 +20,33 @@ ui <- dashboardPage(
                   sliderInput("slider", "Number of observations:", 1, 100, 50)
                 )
               ),
+              # add title bar eventually
+              # fluidRow(
+              #   box(title='Plan your project!',solidHeader = T,status = 'primary')
+              # ),
               fluidRow(
                 box(
-                  title='Select Features',
+                  textInput('project name',
+                            label="Project Name",
+                            value='Enter text...'),
                   selectizeInput("category",
                                  label='Project Category',
                                  choices=unique(ks_app[,"sub_category"])
-                                 )
+                                 ),
+                  sliderInput('duration',
+                              label='Campaign Duration',
+                              min=0,
+                              max=90,
+                              value=30)
+                  ),
+                box(
+                  numericInput("goal_usd",
+                               label = "Funding Goal [USD]",
+                               value = 1000),
+                  numericInput("backers_count",
+                               label = "Estimated Backers",
+                               value = 500),
+                  
                 )
               )
       ),
