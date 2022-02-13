@@ -18,6 +18,7 @@ library(tidyverse)
 library(lubridate)
 library(ggplot2)
 library(gridExtra)
+library(plyr) #needed to mutate using round_any, REMOVE AFTER OR IT WILL BREAK PLOTS
 
 ```
 
@@ -57,7 +58,7 @@ ks <- ks_b %>%
   #calculates average pledge amount
   mutate(avg_plg.bkr=ifelse(backers_count > 0,usd_pledged/backers_count,0)) %>%
   #bins avb_plg.bkr by nearest 10
-  mutate(avg_plg.bkr.bin=round_any(avg_plg.bkr,10)) %>%
+  mutate(avg_plg.bkr.bin=round_any(avg_plg.bkr,10)) %>%           #requires plyr, which may mess with dplyr some - rec removing after runnng this chunk
   #name counts
   mutate(name_len=str_length(name)) %>%
   mutate(name_wrd=sapply(strsplit(name," "),length)) %>%
