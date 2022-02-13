@@ -1154,6 +1154,60 @@ ks %>%
 
 ## Build a model
 
+This didn't actually work
+
+```{r log_model}
+# ---- Second Attempt ----
+#selected variables expected to have highest impact
+
+logit.overall = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
+                    family = 'binomial',
+                    data = ks)
+
+scatter.smooth(logit.overall$fit,
+               residuals(logit.overall, type = "deviance"),
+               lpars = list(col = "red"),
+               xlab = "Fitted Probabilities",
+               ylab = "Deviance Residual Values",
+               main = "Residual Plot for\nLogistic Regression of Admission Data")
+
+exp(logit.overall$coefficients)
+
+summary(logit.overall)
+
+#who has an average GRE and an average GPA?
+newdata = with(ks, data.frame(avg_plg.bkr=mean(avg_plg.bkr),
+                              sub_category='technology',
+                              goal_usd=3000,
+                              duration=mean(duration),
+                              launch_hour=median(launch_hour),
+                              name_len=mean(name_len)))
+
+
+predict(logit.overall, newdata,type='response')
+
+
+#--------
+
+
+
+newdata = with(GradSchools, data.frame(gre = mean(gre),
+                                       gpa = mean(gpa),
+                                       rank = factor(1:4)))
+newdata #Creating a data frame with the average GRE and GPA for each level of
+        #the rank variable.
+
+predict(logit.overall, newdata) #This gives us the log odds; but we want
+                                #the probabilities.
+                                #we know these are log odds because they are negative
+
+#Using the formula to convert to probabilities:
+exp(predict(logit.overall, newdata))/(1 + exp(predict(logit.overall, newdata)))
+#all positive means they could be probabilities if we lacked contect
+
+```
+
+
 ```{r log_model}
 summary(ks)
 
@@ -1246,7 +1300,7 @@ summary(logit.overall3)
 
 ks.r <- ks %>% filter(goal_usd<50000)
 
-logit.overall.r = glm(status_binary ~backers_count + country + usd_pledged + sub_category + main_category + goal_usd + duration + launch_month + launch_dom + +launch_dow + launch_hour + name_len + name_wrd,
+logit.overall.r = glm(status_binary ~backers_count + sub_category + goal_usd + duration + launch_hour + name_len,
                     family = 'binomial',
                     data = ks.r)
 
