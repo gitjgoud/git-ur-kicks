@@ -9,6 +9,7 @@ ks_app <- read.csv(file='./data/clean_kickstarter_data.csv')
 data.txt <- read_lines('./data/data_sources.txt')
 summary.txt <- read_lines('./data/summary.txt')
 objective.txt <- read_lines('./data/objective.txt')
+model.txt <- read_lines('./data/model_summary.txt')
 
 logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
                         family = 'binomial',
@@ -31,7 +32,7 @@ ui <- dashboardPage(skin='black',
                menuItem('Objective', tabName='objective'),
                menuItem('Modeling', tabName='model')
                ),
-      menuItem("EDA",tabName = 'eda', icon= icon("gears"),
+      menuItem("EDA",tabName = 'eda', icon= icon("ruler-combined"),
                menuItem('Funding Goal', tabName = 'eda_funding'),
                menuItem('Backer Trends', tabName = 'eda_backers'),
                menuItem('Name & Blurb', tabName = 'eda_name'),
@@ -45,7 +46,6 @@ ui <- dashboardPage(skin='black',
   ),
   dashboardBody(
     tabItems(
-      # First tab content
       tabItem(tabName = "predictor",
               fluidRow(
               box(title = "Project Parameters",
@@ -113,31 +113,43 @@ ui <- dashboardPage(skin='black',
                 )
               )
       ),
-      
-      # Second tab content
-      tabItem(tabName = "overview",
-              h2("Widgets tab content")
-      ),
-      
-      #third tab item
       tabItem(tabName = "objective",
               h2("Project Overview"),
               fluidRow(
-                tabBox(
-                  #title='Project Overview',
-                  id='tabset1',
-                  width = 12,
-                  #height = '250px',
-                  tabPanel('Summary',
-                           htmlOutput('summary_text')),
-                  tabPanel('Objective',
-                           htmlOutput('objective_text')),
-                  tabPanel('Data Sources',
-                           htmlOutput('data_text'))
-                )
-              )
-              
-              )
+                tabBox(id='tabset1',
+                       width = 12,
+                       tabPanel('Summary',
+                                htmlOutput('summary_text')),
+                       tabPanel('Objective',
+                                htmlOutput('objective_text')),
+                       tabPanel('Data Sources',
+                                htmlOutput('data_text'))
+                    )
+                  )
+              ),
+      tabItem(tabName="model",
+              h2("Modeling Summary"),
+                 fluidRow(
+                   img(src='residuals_plot.JPG', height=490, width=700)
+                         ),
+                 fluidRow(
+                   tabBox(id='tabset2',
+                          width = 12,
+                          tabPanel('Model Summary',
+                                    htmlOutput('model_text'))
+                         )
+                        )
+            ),
+      tabItem(tabName='eda_funding',
+              h2("Funding Goal Analysis"),
+              fluidRow(tabBox(width = 12,
+                              tabPanel('Inspecting Funding Goals',
+                                       img(src='fund1.JPG', height=490, width=700)),
+                              tabPanel('Mean and Median',
+                                       img(src='fund2.JPG', height=490, width=700)),
+                              tabPanel('Overfunding',
+                                       img(src='fund3.JPG', height=490, width=700))
+                              )))
     )
   )
 )
@@ -147,6 +159,7 @@ server <- function(input, output,session) {
   output$data_text <- renderUI({HTML(data.txt)})
   output$summary_text <- renderUI({HTML(summary.txt)})
   output$objective_text <- renderUI({HTML(objective.txt)})
+  output$model_text <- renderUI({HTML(model.txt)})
   
     
   observeEvent(input$calculate, {

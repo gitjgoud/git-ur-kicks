@@ -1,0 +1,55 @@
+summary(logit.overall)<br>
+<br>
+Call:<br>
+glm(formula = status_binary ~ avg_plg.bkr + sub_category + goal_usd + <br>
+    duration + launch_hour + name_len, family = "binomial", data = ks)<br>
+<br>
+Deviance Residuals: <br>
+    Min       1Q   Median       3Q      Max  <br>
+-5.1952  -0.8254   0.4574   0.8022   5.8549  <br>
+<br>
+Coefficients:<br>
+                           Estimate Std. Error z value Pr(>|z|)    <br>
+(Intercept)               1.545e-01  2.744e-02   5.632 1.79e-08 ***<br>
+avg_plg.bkr               1.963e-02  1.421e-04 138.109  < 2e-16 ***<br>
+sub_categorycomics        1.976e+00  4.042e-02  48.894  < 2e-16 ***<br>
+sub_categorycrafts       -1.367e+00  3.806e-02 -35.910  < 2e-16 ***<br>
+sub_categorydance         8.012e-01  4.802e-02  16.683  < 2e-16 ***<br>
+sub_categorydesign        1.971e-01  3.185e-02   6.189 6.06e-10 ***<br>
+sub_categoryfashion       2.396e-01  2.732e-02   8.771  < 2e-16 ***<br>
+sub_categoryfilm & video  8.904e-02  2.194e-02   4.058 4.94e-05 ***<br>
+sub_categoryfood         -8.636e-01  2.516e-02 -34.319  < 2e-16 ***<br>
+sub_categorygames         9.381e-01  2.764e-02  33.944  < 2e-16 ***<br>
+sub_categoryjournalism   -6.875e-01  3.460e-02 -19.868  < 2e-16 ***<br>
+sub_categorymusic         3.420e-01  2.146e-02  15.940  < 2e-16 ***<br>
+sub_categoryphotography  -3.781e-01  2.943e-02 -12.847  < 2e-16 ***<br>
+sub_categorypublishing    4.492e-01  2.354e-02  19.082  < 2e-16 ***<br>
+sub_categorytechnology   -7.175e-01  2.485e-02 -28.871  < 2e-16 ***<br>
+sub_categorytheater       3.749e-01  3.429e-02  10.932  < 2e-16 ***<br>
+goal_usd                 -4.410e-05  4.568e-07 -96.541  < 2e-16 ***<br>
+duration                 -2.558e-02  4.646e-04 -55.051  < 2e-16 ***<br>
+launch_hour               1.740e-03  8.111e-04   2.145    0.032 *  <br>
+name_len                  1.323e-02  3.654e-04  36.209  < 2e-16 ***<br>
+---<br>
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1<br>
+<br>
+(Dispersion parameter for binomial family taken to be 1)<br>
+
+    Null deviance: 264535  on 199658  degrees of freedom<br>
+Residual deviance: 199308  on 199639  degrees of freedom<br>
+AIC: 199348<br>
+<br>
+Number of Fisher Scoring iterations: 6<br>
+<br>
+<br>
+> table(truth = ks$status_binary, prediction = status.predicted)<br>
+     prediction<br>
+truth      0      1<br>
+    0  45694  29534<br>
+    1  11336 113095<br>
+> # truth      0      1<br>
+> #     0  45694  29534<br>
+> #     1  11336 113095<br>
+<br>
+> (45694+113095)/(113095+11336+29534+45694)<br>
+[1] 0.795301<br>

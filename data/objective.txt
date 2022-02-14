@@ -1,0 +1,3 @@
+We are all creators. Some of us do it for passion or pleasure, others for personal gain. <br>
+<br>
+The goal of this project is to derive insight from historical kickstarter project data and create a predictor of campaign success. Regarless of reason, creators-to-be will be able to understand how to best approach a launching a successful campaign and bring something great to life. 
