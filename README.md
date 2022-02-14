@@ -1,7 +1,7 @@
 # git-ur-kicks
 What does it take to have a successful kickstater campaign? This project attempts to answer that question.
 
-Data from over 200,000 kickstarter campagin run between 2014-2022 was analyzed and key factors were identified. A model was fit using logistic regression in R which predicted the original dataset at ~79% accuracy, which was used to drive a shiny dashboard prediction app. All relevant files are included in the repo.
+Data from over 200,000 kickstarter campagin run between 2014-2022 was analyzed and key factors were identified. A model was fit using logistic regression in R which predicted the original dataset at ~79% accuracy, which was used to drive a shiny dashboard prediction app. All relevant files are included in the repo. [Data Dictionary](https://docs.google.com/spreadsheets/d/10BwF4_YedJ3HgrH9OvXecRWBwUYSOvff0WvxB9svzM0/edit?usp=sharing)
 
 The target audience for this application is primarily project creators who want to make something awesome, and backers who want the projects they like to succeed. The Kickstarter organization also has vested interest in a high overall project success rate - they only get paid if the funding goal is achieved.
 
