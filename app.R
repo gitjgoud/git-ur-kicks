@@ -141,15 +141,25 @@ ui <- dashboardPage(skin='black',
                         )
             ),
       tabItem(tabName='eda_funding',
-              h2("Funding Goal Analysis"),
+              h2("Set A Reasonable Funding Goal"),
               fluidRow(tabBox(width = 12,
                               tabPanel('Inspecting Funding Goals',
                                        img(src='fund1.JPG', height=490, width=700)),
                               tabPanel('Mean and Median',
                                        img(src='fund2.JPG', height=490, width=700)),
-                              tabPanel('Overfunding',
+                              tabPanel("Don't Plan To Exceed...",
                                        img(src='fund3.JPG', height=490, width=700))
-                              )))
+                              ))),
+      tabItem(tabName='eda_backers',
+              h2("Backer Engagement Is Critical"),
+              fluidRow(tabBox(width = 12,
+                              tabPanel('Backer Stats',
+                                       img(src='bkr1.JPG', height=490, width=700)),
+                              tabPanel('Maximize Reward Tier Value',
+                                       img(src='bkr3.JPG', height=490, width=700)),
+                              tabPanel('Backer Behavior Near Funding Goal',
+                                       img(src='bkr2.JPG', height=490, width=700))
+              )))
     )
   )
 )
