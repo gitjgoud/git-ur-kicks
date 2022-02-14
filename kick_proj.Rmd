@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Data Prep & Review ##############################################################################################################
 
+
 ```{r Load Libraries}
 library(tidyverse)
 library(lubridate)
@@ -68,7 +69,8 @@ ks <- ks_b %>%
   filter(goal_usd<=5e05) %>%
   filter(avg_plg.bkr<=724)
 
-library(plyr)  
+
+#unload plyr, reload dplyr to fix some issues with masked functions
 detach(package:plyr, unload=T)
 detach(package:dplyr, unload=T)
 library(dplyr)
@@ -89,8 +91,8 @@ Try to determine if outliers exist for numerical fields
 
 Reviewed several sources for outlier detection in data, few were useful
 - data not normally distributed, z-scre method not applicable {https://machinelearningmastery.com/how-to-use-statistics-to-identify-outliers-in-data/}
-- advanced methods were too challenging to implement {https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm},etc
-- most evaluated using IQR method when possible (3x) {https://machinelearningmastery.com/how-to-use-statistics-to-identify-outliers-in-data/}
+- advanced methods were too challenging/time consuming to implement {https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm},etc
+- evaluated using IQR method when possible (3x) {https://machinelearningmastery.com/how-to-use-statistics-to-identify-outliers-in-data/}
 - when no methods applied (IQR method removes too much data), eliminated top 0.05% as extreme outliers
 
 - suggest revisiting analysis after receiving feedback
@@ -1237,6 +1239,7 @@ ggsave("www/ctr1.JPG",plot=ctr1)
 - First few attempts didn't work
 - Spent a day attempting to remove outliers from data and identify important factors
 - Got a working model with 79.5% prediction accuracy using original dataset
+- Needs work
 
 ```{r log_model w/ export dataset - testing for app}
 #this should be the same as below but code uses exported CSV for data

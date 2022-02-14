@@ -5,23 +5,18 @@ library(tidyverse)
 library(dplyr)
 library(DT)
 
+#read data files
 ks_app <- read.csv(file='./data/clean_kickstarter_data.csv')
 data.txt <- read_lines('./data/data_sources.txt')
 summary.txt <- read_lines('./data/summary.txt')
 objective.txt <- read_lines('./data/objective.txt')
 model.txt <- read_lines('./data/model_summary.txt')
 
+#create algorithm
+#(dear grader - how do we export this so we don't need to create in-app?)
 logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
                         family = 'binomial',
                         data = ks_app)
-
-#load with initial values
-user_proj = with(ks_app, data.frame(avg_plg.bkr=round(mean(avg_plg.bkr)),
-                                  sub_category='food',
-                                  goal_usd=3000,
-                                  duration=round(mean(duration)),
-                                  launch_hour=median(launch_hour),
-                                  name_len=round(mean(name_len))))
 
 ui <- dashboardPage(skin='black',
   dashboardHeader(title = "Can You Kickstart?"),
@@ -216,12 +211,13 @@ ui <- dashboardPage(skin='black',
 
 server <- function(input, output,session) {
   
+  #load external text data
   output$data_text <- renderUI({HTML(data.txt)})
   output$summary_text <- renderUI({HTML(summary.txt)})
   output$objective_text <- renderUI({HTML(objective.txt)})
   output$model_text <- renderUI({HTML(model.txt)})
   
-    
+  #calculate probability of success on button push
   observeEvent(input$calculate, {
     user_proj <- data.frame(
       avg_plg.bkr = input$est_pledge,
@@ -244,18 +240,10 @@ server <- function(input, output,session) {
     
   })
   
+  #initialize output box
   output$percent_success <- renderText({
     '<-- Click Predict to see chance of success!'
   })
-  
-  output$project_params <- DT::renderDataTable(
-    user_proj,
-    rownames=FALSE,
-    options=list(dom='t')
-  )
-  
-  
-  
 }
 
 
