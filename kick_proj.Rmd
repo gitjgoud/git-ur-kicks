@@ -1452,3 +1452,14 @@ summary(logit.overall2)
 
 
 ```
+
+```{r}
+#scratchpad
+
+column_names(ks)
+
+
+
+
+```
+
