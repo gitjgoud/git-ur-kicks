@@ -1,0 +1,3 @@
+The data used for this project can be found <a href="https://www.kaggle.com/yashkantharia/kickstarter-campaigns-dataset-20">kaggle</a>. <br>
+<br>
+This dataset consists of approximately 217,000 kickster campaigns that ran between 2014 and 2020.

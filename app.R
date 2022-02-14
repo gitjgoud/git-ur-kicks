@@ -7,6 +7,8 @@ library(DT)
 
 ks_app <- read.csv(file='./data/clean_kickstarter_data.csv')
 data.txt <- read_lines('./data/data_sources.txt')
+summary.txt <- read_lines('./data/summary.txt')
+
 
 
 logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
@@ -28,7 +30,6 @@ ui <- dashboardPage(skin='black',
       menuItem("Success Predictor", tabName = "predictor", icon = icon("hat-wizard")),
       menuItem("Project Overview", tabName = "overview", icon = icon("splotch"),
                menuItem('Objective', tabName='objective'),
-               menuItem('Data', tabName = 'prjdata'),
                menuItem('Modeling', tabName='model')
                ),
       menuItem("EDA",tabName = 'eda', icon= icon("gears"),
@@ -128,7 +129,8 @@ ui <- dashboardPage(skin='black',
                   id='tabset1',
                   width = 12,
                   #height = '250px',
-                  tabPanel('Summary','summary text'),
+                  tabPanel('Summary',
+                           htmlOutput('summary_text')),
                   tabPanel('Objective','objective text'),
                   tabPanel('Data Sources',
                            htmlOutput('data_text'))
@@ -142,9 +144,9 @@ ui <- dashboardPage(skin='black',
 
 server <- function(input, output,session) {
   
-  output$data_text <- renderUI({
-    HTML(data.txt)
-  })
+  output$data_text <- renderUI({HTML(data.txt)})
+  output$summary_text <- renderUI({HTML(summary.txt)})
+  
   observeEvent(input$calculate, {
     user_proj <- data.frame(
       avg_plg.bkr = input$est_pledge,
