@@ -8,8 +8,7 @@ library(DT)
 ks_app <- read.csv(file='./data/clean_kickstarter_data.csv')
 data.txt <- read_lines('./data/data_sources.txt')
 summary.txt <- read_lines('./data/summary.txt')
-
-
+objective.txt <- read_lines('./data/objective.txt')
 
 logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
                         family = 'binomial',
@@ -17,7 +16,7 @@ logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + 
 
 #load with initial values
 user_proj = with(ks_app, data.frame(avg_plg.bkr=round(mean(avg_plg.bkr)),
-                                  sub_category='technology',
+                                  sub_category='food',
                                   goal_usd=3000,
                                   duration=round(mean(duration)),
                                   launch_hour=median(launch_hour),
@@ -74,7 +73,7 @@ ui <- dashboardPage(skin='black',
                   column(width=6,
                   numericInput("goal_usd",
                                label = "Funding Goal [USD]",
-                               value = 1000),
+                               value = 3000),
                   numericInput("est_pledge",
                                label = "Estimated Average Pledge",
                                value = 20),
@@ -131,7 +130,8 @@ ui <- dashboardPage(skin='black',
                   #height = '250px',
                   tabPanel('Summary',
                            htmlOutput('summary_text')),
-                  tabPanel('Objective','objective text'),
+                  tabPanel('Objective',
+                           htmlOutput('objective_text')),
                   tabPanel('Data Sources',
                            htmlOutput('data_text'))
                 )
@@ -146,7 +146,9 @@ server <- function(input, output,session) {
   
   output$data_text <- renderUI({HTML(data.txt)})
   output$summary_text <- renderUI({HTML(summary.txt)})
+  output$objective_text <- renderUI({HTML(objective.txt)})
   
+    
   observeEvent(input$calculate, {
     user_proj <- data.frame(
       avg_plg.bkr = input$est_pledge,
