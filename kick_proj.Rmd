@@ -317,7 +317,7 @@ ks %>%
 
 
 #USE THIS
-ks %>%
+name1<-ks %>%
   group_by(name_len) %>%
   summarize(total=n(),
             avg_goal=mean(goal_usd),
@@ -331,6 +331,9 @@ ks %>%
   theme_linedraw() +
   scale_color_gradient(low='grey',high='firebrick4') +
   scale_x_continuous(breaks=seq(0,90,by=5))
+
+ggsave("www/name1.JPG",plot=name1)
+
 
 
 #--- name word ---------------------------------------------------------------
@@ -380,12 +383,15 @@ ks %>%
 
 
 #USE THIS
-ks %>%
+name2 <-ks %>%
   ggplot(aes(x=name_len/name_wrd)) + 
   geom_density(aes(fill=status),alpha=.4) +
   theme_linedraw()+
   labs(title='Average Word Length',x='Chars in Word',y='Density') +  
   xlim(0,20)
+
+ggsave("www/name2.JPG",plot=name2)
+
 
 ks %>% group_by(status) %>% summarize(mean(name_len/name_wrd))
 #  status     `mean(name_len/name_wrd)`
@@ -456,15 +462,18 @@ sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed'))
 
 #USE THIS
 #suspect we're seeing effect of outliers because country is not a strong factor itself
-country %>%
+con1<-country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=succ_rate))+
   geom_point(aes(size=total,col=avg_goal)) +
-  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
   ylim(0,1)+
   theme_linedraw() +
   labs(title='Country vs Success Rate',x='',y='Success Rate',
        size="Num Proj", color="Average Goal") 
 #leave x=axis ordet the same and explore other variables
+ggsave("www/con1.JPG",plot=con1)
+
+
 
 country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=log(total))) +
@@ -496,7 +505,7 @@ country %>%
 count1 <-country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=succ_rate))+
   geom_point() +
-  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
   ylim(0,1)+
   theme_linedraw() +
   labs(title='Country vs Success Rate',x='',y='Success Rate',
@@ -513,7 +522,7 @@ count2 <-country %>%
 
 count3 <-country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=avg_plg)) +
-  geom_hline(yintercept = mean(ks$avg_plg.bkr))+
+  geom_hline(yintercept = mean(ks$avg_plg.bkr),linetype=3)+
   geom_point() +
   theme_linedraw() +
   labs(title='Country vs Average Pledge',x='',y='Average Pledge',
@@ -522,7 +531,7 @@ count3 <-country %>%
 
 count4<-country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=avg_bkrs)) +
-  geom_hline(yintercept=mean(ks$backers_count)) +
+  geom_hline(yintercept=mean(ks$backers_count),linetype=3) +
   geom_point() +
   theme_linedraw() +
   labs(title='Country vs Average Backer Count',x='',y='Average Num Backers',
@@ -530,14 +539,16 @@ count4<-country %>%
 
 country %>%
   ggplot(aes(x=reorder(country,succ_rate),y=avg_goal)) +
-  geom_hline(yintercept=mean(ks$goal_usd)) +
+  geom_hline(yintercept=mean(ks$goal_usd),linetype=3) +
   geom_point() +
   theme_linedraw() +
   labs(title='Country vs Average Backer Count',x='',y='Average Num Backers',
        size="Succ Rate", color="Average Goal") 
 
 #USE THIS
-grid.arrange(count1,count2,count3,count4,nrow=2)
+con2<-grid.arrange(count1,count2,count3,count4,nrow=2)
+ggsave("www/con2.JPG",plot=con2)
+
 #the point is not to break down every facet of country, but show it is likely a confounding factor
 #compare us to non-US
 
@@ -631,7 +642,9 @@ bkr2 <-ks %>% filter(avg_plg.bkr<250) %>%
   theme(legend.position = "none")
 
 #USE THIS
-grid.arrange(bkr1,bkr2,ncol=2)
+bkr1<-grid.arrange(bkr1,bkr2,ncol=2)
+ggsave("www/bkr1.JPG",plot=bkr1)
+
 
 #--- Scatter/pct_funded and backers ----
 
@@ -662,7 +675,8 @@ bkr4 <-ks %>%
   theme(legend.position = 'none')
 
 #USE THIS
-grid.arrange(bkr3,bkr4,nrow=2)
+bkr2<-grid.arrange(bkr3,bkr4,nrow=2)
+ggsave("www/bkr2.JPG",plot=bkr2)
 
 
 
@@ -673,7 +687,7 @@ ks %>%
   transmute(round_any(avg_plg.bkr,10))
 
 #USE THIS
-ks %>%
+bkr3<-ks %>%
   group_by(avg_plg.bkr.bin) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
@@ -689,6 +703,8 @@ ks %>%
   theme(panel.grid.minor=element_blank()) +
   labs(title='Average Pledge Trends',x='Average Pledge (USD)',y='Percent success') +
   ylim(0,1)
+
+ggsave("www/bkr3.JPG",plot=bkr3)
 
 
 ```
@@ -736,6 +752,10 @@ goal3 <- ks %>% filter(goal_usd<1e4) %>%
 
 #USE THIS
 grid.arrange(goal1,goal2,goal3,nrow=3)
+fund2<-grid.arrange(goal1,goal2,goal3,nrow=3)
+ggsave("www/fund2.JPG",plot=fund2)
+
+
 
 #--- Box Plots/goal_usd
 
@@ -747,12 +767,14 @@ ks %>%
 #plot on log scale instead
 
 #USE THIS
-ks %>%
+fund1 <-ks %>%
   ggplot(aes(x=fct_reorder(status,goal_usd),y=log(goal_usd))) +
   geom_violin(aes(fill=status)) +
   geom_boxplot(alpha=.5) +
   theme_linedraw() +
   labs(x='',y='log(Prohect Funding Goal (USD))',title = 'Funding Goal')
+ggsave("www/fund1.JPG",plot=fund1)
+
 # Overlap between IQRs, medians are veyr close (on log scale)
 # success has low tail, failed has high
 
@@ -784,12 +806,15 @@ ks %>%
 #--- Density Plot/pct_funded
 
 #USE THIS
-ks %>% filter(pct_funded<5) %>%
+fund3 <- ks %>% filter(pct_funded<5) %>%
   ggplot(aes(x=pct_funded*100)) +
   geom_density(aes(fill=status), alpha = .4) +
   theme_linedraw() +
   labs(x='',y='',title = 'Percent Funded') +
   theme(axis.text.y=element_blank()) 
+
+ggsave("www/fund3.JPG",plot=fund3)
+
 #vast majority of funded projects do not exceed 200% of goal
 #density scale is broken due to not showing full dataset - just hiding
 
@@ -815,15 +840,16 @@ sub_cat <- ks %>%
 sub_cat
 
 #USE THIS
-sub_cat %>%
+cat1<-sub_cat %>%
   ggplot(aes(x=reorder(sub_category, pct_succ))) +
   geom_point(aes(y=pct_succ,size=avg_bkrs,col=avg_goal)) +
-  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
   theme_linedraw() +
   scale_color_gradient(low='grey',high='firebrick4') +
   labs(x='',y='Percent Successful',title='Broad Category (aka SubCategory) Success') +
   theme(axis.text.x = element_text(angle=45,vjust=.65))
 
+ggsave("www/cat1.JPG",plot=cat1)
 
 
 
@@ -840,16 +866,20 @@ main_cat <- ks %>%
 main_cat
 
 #USE THIS
-main_cat %>%
+cat2<-main_cat %>%
   ggplot(aes(x=reorder(main_category, pct_succ))) +
   geom_point(aes(y=pct_succ,size=avg_bkrs,col=avg_goal)) +
-  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')))+
+  geom_hline(yintercept = sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed')),linetype=3)+
   theme_linedraw() +
   scale_color_gradient(low='grey',high='firebrick4') +
-  labs(x='',y='Percent Success',title='Broad Category (aka SubCategory) Success') +
+  labs(x='',y='Percent Success',title='Detailed Category (aka MainCategory) Success') +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank(),
         panel.grid.major.x = element_blank())
+
+ggsave("www/cat2.JPG",plot=cat2)
+
+
 
 #USE THIS
 main_cat %>% arrange(desc(pct_succ)) %>% top_n(10)
@@ -887,7 +917,7 @@ main_cat %>% arrange(pct_succ) %>% top_n(-10)
 ```{r Launch Timing}
 
 #USE THIS
-ks %>%
+lch1<-ks %>%
   group_by(launch_year) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
@@ -904,10 +934,11 @@ ks %>%
   theme(panel.grid.minor=element_blank()) +
   labs(title='Launch Year Tends',x='Year',y='Percent success')
 #interesting drop in 2014 then trending back up
+ggsave("www/lch1.JPG",plot=lch1)
 
 
 #USE THIS
-ks %>%
+lch2<-ks %>%
   group_by(launch_month) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
@@ -923,9 +954,10 @@ ks %>%
   theme_linedraw() +
   theme(panel.grid.minor=element_blank()) +
   labs(title='Launch Month Tends',x='Month',y='Percent success')
+ggsave("www/lch2.JPG",plot=lch2)
 
 #USE THIS
-ks %>%
+lch3<-ks %>%
   group_by(launch_dom) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
@@ -942,8 +974,11 @@ ks %>%
   theme(panel.grid.minor=element_blank()) +
   labs(title='Launch Day Tends - Day of Month',x='Day of Month',y='Percent success')
 
+ggsave("www/lch3.JPG",plot=lch3)
+
+
 #USE THIS
-ks %>%
+lch4<-ks %>%
   group_by(launch_dow) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
@@ -959,9 +994,11 @@ ks %>%
   theme_linedraw() +
   theme(panel.grid.minor=element_blank()) +
   labs(title='Launch Day Tends - Day of Week',x='Day of week',y='Percent success')
+ggsave("www/lch4.JPG",plot=lch4)
+
 
 #USE THIS
-ks %>%
+lch5<-ks %>%
   group_by(launch_hour) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
@@ -978,6 +1015,8 @@ ks %>%
   theme_linedraw() +
   theme(panel.grid.minor=element_blank()) +
   labs(title='Launch Hour Trends',x='Hour (UTC)',y='Percent success')
+
+ggsave("www/lch5.JPG",plot=lch5)
 
 
 #--- Old Stuff ----
@@ -1141,7 +1180,7 @@ ks %>%
   scale_y_continuous(limits=c(0,100),breaks=seq(0,100,by=10)) 
   
 #USE THIS
-ks %>%
+dur1<-ks %>%
   group_by(duration) %>%
   summarize(ct_succ=sum(status=='successful'),
             ct_fail=sum(status=='failed'),
@@ -1156,8 +1195,11 @@ ks %>%
   ylim(c(0,1)) +
   theme_linedraw() +
   theme(panel.grid.minor=element_blank()) +
-  labs(title='Launch Year Tends',x='Year',y='Percent success')
+  labs(title='Project Duration',x='days',y='Percent success')
 
+ggsave("www/dur1.JPG",plot=dur1)
+
+sum(ks$status=='successful')/sum((ks$status=='successful'|ks$status=='failed'))
 
 ```
 
@@ -1165,7 +1207,7 @@ ks %>%
 ```{r Creator Experience}
 
 #USE THIS
-ks %>%
+ctr1 <- ks %>%
   group_by(creator_id) %>%
   mutate(num_projects.creator=n()) %>%
   ungroup() %>%
@@ -1184,6 +1226,10 @@ ks %>%
   theme_linedraw() +
   theme(panel.grid.minor=element_blank()) +
   labs(title='Creator Experience',x='Number of Projects Attempted',y='Percent success')
+
+ggsave("www/ctr1.JPG",plot=ctr1)
+
+
 
 ```
 
@@ -1250,12 +1296,17 @@ logit.overall = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + dura
                     family = 'binomial',
                     data = ks)
 
-scatter.smooth(logit.overall$fit,
+redi.plot <-scatter.smooth(logit.overall$fit,
                residuals(logit.overall, type = "deviance"),
                lpars = list(col = "red"),
                xlab = "Fitted Probabilities",
                ylab = "Deviance Residual Values",
                main = "Residual Plot for\nLogistic Regression of Admission Data")
+
+#not working, giving up on this one and using ss
+ggsave("www/residuals.JPG",plot=redi.plot)
+ggsave("RegressionPlot.jpeg",plot=redi.plot)
+
 
 exp(logit.overall$coefficients)
 
