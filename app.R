@@ -5,7 +5,8 @@ library(tidyverse)
 library(dplyr)
 library(DT)
 
-ks_app <- read.csv(file='./clean_kickstarter_data.csv')
+ks_app <- read.csv(file='./data/clean_kickstarter_data.csv')
+data.txt <- read_lines('./data/data_sources.txt')
 
 
 logit.overall.app = glm(status_binary ~ avg_plg.bkr + sub_category + goal_usd + duration + launch_hour + name_len,
@@ -27,7 +28,8 @@ ui <- dashboardPage(skin='black',
       menuItem("Success Predictor", tabName = "predictor", icon = icon("hat-wizard")),
       menuItem("Project Overview", tabName = "overview", icon = icon("splotch"),
                menuItem('Objective', tabName='objective'),
-               menuItem('Data', tabName = 'prjdata')
+               menuItem('Data', tabName = 'prjdata'),
+               menuItem('Modeling', tabName='model')
                ),
       menuItem("EDA",tabName = 'eda', icon= icon("gears"),
                menuItem('Funding Goal', tabName = 'eda_funding'),
@@ -37,9 +39,7 @@ ui <- dashboardPage(skin='black',
                menuItem('Category', tabName = 'eda_category'),
                menuItem('Launch Timing', tabName = 'eda_timing'),
                menuItem('Duration', tabName= 'eda_duration'),
-               menuItem('Experience', tabName = 'eda_experience'),
-               selectInput(inputId = 'mcm',label='some label',
-                           multiple = T, choices= c('1','2','3','4'))
+               menuItem('Experience', tabName = 'eda_experience')
                )
     )
   ),
@@ -120,15 +120,31 @@ ui <- dashboardPage(skin='black',
       ),
       
       #third tab item
-      tabItem(tabName = "eda",
-              h2("Testing"))
+      tabItem(tabName = "objective",
+              h2("Project Overview"),
+              fluidRow(
+                tabBox(
+                  #title='Project Overview',
+                  id='tabset1',
+                  width = 12,
+                  #height = '250px',
+                  tabPanel('Summary','summary text'),
+                  tabPanel('Objective','objective text'),
+                  tabPanel('Data Sources',
+                           htmlOutput('data_text'))
+                )
+              )
+              
+              )
     )
   )
 )
 
 server <- function(input, output,session) {
-
   
+  output$data_text <- renderUI({
+    HTML(data.txt)
+  })
   observeEvent(input$calculate, {
     user_proj <- data.frame(
       avg_plg.bkr = input$est_pledge,
