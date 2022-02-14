@@ -35,12 +35,12 @@ ui <- dashboardPage(skin='black',
       menuItem("EDA",tabName = 'eda', icon= icon("ruler-combined"),
                menuItem('Funding Goal', tabName = 'eda_funding'),
                menuItem('Backer Trends', tabName = 'eda_backers'),
+               menuItem('Creator Experience', tabName = 'eda_creator'),
                menuItem('Name & Blurb', tabName = 'eda_name'),
                menuItem('Location', tabName = 'eda_location'),
                menuItem('Category', tabName = 'eda_category'),
                menuItem('Launch Timing', tabName = 'eda_timing'),
-               menuItem('Duration', tabName= 'eda_duration'),
-               menuItem('Experience', tabName = 'eda_experience')
+               menuItem('Duration', tabName= 'eda_duration')
                )
     )
   ),
@@ -159,6 +159,28 @@ ui <- dashboardPage(skin='black',
                                        img(src='bkr3.JPG', height=490, width=700)),
                               tabPanel('Backer Behavior Near Funding Goal',
                                        img(src='bkr2.JPG', height=490, width=700))
+              ))),
+      tabItem(tabName='eda_creator',
+              h2("The Value Of Experience"),
+              fluidRow(tabBox(width = 12,
+                              tabPanel('Learn from failure',
+                                       img(src='ctr1.JPG', height=490, width=700))
+              ))),
+      tabItem(tabName='eda_name',
+              h2("Describe the dream"),
+              fluidRow(tabBox(width = 12,
+                              tabPanel('Lenght is length',
+                                       img(src='name2.JPG', height=490, width=700)),
+                              tabPanel('Be (relatively) vebose',
+                                       img(src='name1.JPG', height=490, width=700))
+              ))),
+      tabItem(tabName='eda_location',
+              h2("Where should you launch?"),
+              fluidRow(tabBox(width = 12,
+                              tabPanel('It seems important',
+                                       img(src='con1.JPG', height=490, width=700)),
+                              tabPanel('...but probably isnt',
+                                       img(src='con2.JPG', height=490, width=700))
               )))
     )
   )
