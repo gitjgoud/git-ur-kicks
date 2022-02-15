@@ -36,7 +36,12 @@ ui <- dashboardPage(skin='black',
                menuItem('Category', tabName = 'eda_category'),
                menuItem('Launch Timing', tabName = 'eda_timing'),
                menuItem('Duration', tabName= 'eda_duration')
-               )
+               ),
+      menuItem("About",tabName = 'about', icon= icon("ruler-combined"),
+               menuItem('About Me', tabName = 'aboutme'),
+               menuItem('Linked In', tabName = 'linkedin'),
+               menuItem('Github', tabName = 'git')
+      )
     )
   ),
   dashboardBody(
