@@ -11,6 +11,7 @@ data.txt <- read_lines('./data/data_sources.txt')
 summary.txt <- read_lines('./data/summary.txt')
 objective.txt <- read_lines('./data/objective.txt')
 model.txt <- read_lines('./data/model_summary.txt')
+next.txt <- read_lines('./data/next_steps.txt')
 
 #create algorithm
 #(dear grader - how do we export this so we don't need to create in-app?)
@@ -123,7 +124,9 @@ ui <- dashboardPage(skin='black',
                        tabPanel('Objective',
                                 htmlOutput('objective_text')),
                        tabPanel('Data Sources',
-                                htmlOutput('data_text'))
+                                htmlOutput('data_text')),
+                       tabPanel('Next Steps',
+                                htmlOutput('next_text'))
                     )
                   )
               ),
@@ -169,7 +172,7 @@ ui <- dashboardPage(skin='black',
       tabItem(tabName='eda_name',
               h2("Describe the dream"),
               fluidRow(tabBox(width = 12,
-                              tabPanel('Lenght is length',
+                              tabPanel('Length is length',
                                        img(src='name2.JPG', height=490, width=700)),
                               tabPanel('Be (relatively) vebose',
                                        img(src='name1.JPG', height=490, width=700))
@@ -195,11 +198,11 @@ ui <- dashboardPage(skin='black',
               fluidRow(tabBox(width = 12,
                               tabPanel("Kickstarter is getting more popular",
                                        img(src='lch1.JPG', height=490, width=700)),
-                              tabPanel('Avoid the holidays',
+                              tabPanel('Avoid the holiday season',
                                        img(src='lch2.JPG', height=490, width=700)),
                               tabPanel("Kick off in a new month",
                                        img(src='lch3.JPG', height=490, width=700)),
-                              tabPanel("Tuesdays are for slackers",
+                              tabPanel("Tuesdays are for browsing",
                                        img(src='lch4.JPG', height=490, width=700)),
                               tabPanel('Aim for the front page',
                                        img(src='lch5.JPG', height=490, width=700))
@@ -221,6 +224,7 @@ server <- function(input, output,session) {
   output$summary_text <- renderUI({HTML(summary.txt)})
   output$objective_text <- renderUI({HTML(objective.txt)})
   output$model_text <- renderUI({HTML(model.txt)})
+  output$next_text <- renderUI({HTML(next.txt)})
   
   #calculate probability of success on button push
   observeEvent(input$calculate, {
