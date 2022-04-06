@@ -38,10 +38,11 @@ ui <- dashboardPage(skin='black',
                menuItem('Launch Timing', tabName = 'eda_timing'),
                menuItem('Duration', tabName= 'eda_duration')
                ),
-      menuItem("About",tabName = 'about', icon= icon("ruler-combined"),
-               menuItem('About Me', tabName = 'aboutme'),
-               menuItem('Linked In', tabName = 'linkedin'),
-               menuItem('Github', tabName = 'git')
+      menuItem("About Me",tabName = 'about', icon= icon("info-circle"),
+               menuItem('LinkedIn',  icon=icon('linkedin'),
+                        href = "https://www.linkedin.com/in/james-goudreault/"),
+               menuItem('GitHub', icon=icon('github'),
+                        href = "https://github.com/gitjgoud")
       )
     )
   ),

@@ -1,0 +1,6 @@
+Next steps include: <br>
+<br><ul>
+<li> Flush out EDA: Review EDA with respect to model tuning, update app plots and provide written observations, add other features explored<br>
+<li> Tune the model: After building the predictor app I noticed some odd behavior, such as predicted success stricly dropping with increasing duration from 1 day when it should be at a maximum around (but not on) 30 days. EDA helps explain the reason for this behavior but a fix has not been explored. General tuning and vetting of feature engineering/selection needs to be completed. <br>
+<li> Compare other models: Consider exploring performance of other classifiers like Random Forest and SVM <br>
+<li> Polish the app: Format the app to be more visually pleasing, including fixing plot resolution and sizing and/or allow for easy zoom. Top priorities are reducing clutter/clipping and improving readability.
