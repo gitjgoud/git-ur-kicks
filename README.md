@@ -8,6 +8,6 @@ The target audience for this application is primarily project creators who want 
 This project was originally submitted on 13 February 2022.
 
 Next steps include:
-* Tune the model: After building the predictor app I noticed some odd behavior, such as predicted success stricly dropping with increasing duration from 1 day when it should be at a maximum around (but not on) 30 days. EDA helps explain the reason for this behavior but a fix has not been explored. General tuning and vetting of variable selection needs to be completed.
+* Tune the model: After building the predictor app I noticed some odd behavior, such as predicted success stricly dropping with increasing duration from 1 day when it should be at a maximum around (but not on) 30 days. EDA helps explain the reason for this behavior but a fix has not been explored. General tuning and vetting of feature engineering/selection needs to be completed.
 *  Polish the app: Format the app to be more visually pleasing, including reviewing plots. Top priorities are reducing clutter/clipping and improving readability.
 *  Flush out EDA: Review EDA with respect to model tuning, update app plots and provide written observations.
